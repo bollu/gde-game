@@ -4,9 +4,13 @@ from curses import wrapper
 from curses.textpad import Textbox, rectangle
 from curses import ascii
 import time
-# from textblob import TextBlob
-# from textblob.sentiments import NaiveBayesAnalyzer
-# from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer 
+import random
+from textblob import TextBlob
+from textblob.sentiments import NaiveBayesAnalyzer
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer 
+
+sentimentAnalyzer = SentimentIntensityAnalyzer() 
+
 
 
 
@@ -51,14 +55,11 @@ def print_prompt(s):
 
     words = s.split(' ')
     for i, w in enumerate(words):
-        # senti = sid_obj.polarity_scores(w)
-        # if senti['neg'] >= 0.5: pad.addstr(w, curses.color_pair(PAIR_RED_ON_WHITE))
-        # elif senti['pos'] >= 0.5: pad.addstr(w, curses.color_pair(PAIR_GREEN_ON_WHITE))
-        # else: pad.addstr(w)
+        senti = sentimentAnalyzer.polarity_scores(w)
+        if senti['neg'] >= 0.1: INPUT_PAD.addstr(w, curses.color_pair(PAIR_RED_ON_WHITE))
+        elif senti['pos'] >= 0.1: INPUT_PAD.addstr(w, curses.color_pair(PAIR_GREEN_ON_WHITE))
+        else: INPUT_PAD.addstr(w)
         
-
-        # pad.addstr(w, curses.COLOR_RED)
-        INPUT_PAD.addstr(w)
         draw()
         #for c in w:
         #    pad.addch(0, ord(c))
@@ -139,8 +140,8 @@ def print_immigration_feedback(choice):
 def update_score(choice):
     pass
 
-def print_immigrant_hello():
-    print_immigrant("foo", "hello. My name is foo")
+def print_immigrant_hello(name):
+    print_immigrant(name, "hello. My name is foo")
 
 def main(stdscr):
     global INPUT_PAD
@@ -148,6 +149,11 @@ def main(stdscr):
     global STDSCR
     global IMMIGRATION_PAD
     global SCORE_PAD
+
+    with open("immigrant_names.txt", "r") as f:
+        IMMIGRANT_NAMES = [name.split("\n")[0] for name in f.readlines()]
+    random.shuffle(IMMIGRANT_NAMES)
+
 
     STDSCR = stdscr
     INPUT_PAD = curses.newpad(1, 80)
@@ -169,20 +175,19 @@ def main(stdscr):
     STDSCR.refresh()
 
 
-    print_immigrant_hello()
-    draw()
+    immigrant_name = IMMIGRANT_NAMES[0]
+    IMMIGRANT_NAMES = IMMIGRANT_NAMES[1:]
+    print_immigrant_hello(immigrant_name)
     
     # Allow for dialogue
     # ==================
     for i in range(3):
-        draw()
-
 
         i = read_input()
 
         # Print out output
         r = compute_response(i)
-        print_immigrant("sid", r)
+        print_immigrant(immigrant_name, r)
 
     # Provide options
     # ===============
