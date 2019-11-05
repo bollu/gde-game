@@ -32,8 +32,14 @@ IMMIGRATION_PAD = None
 SCORE_PAD = None
 VIEW_PAD = None
 
+class Score:
+    def __init__(self):
+        self.num_deported = 0
+        self.num_allowed = 0
+        self.num_detained = 0
+
 # Score is just permanantly drawn
-SCORE = 0
+SCORE = Score()
 
 sid_obj = SentimentIntensityAnalyzer() 
 
@@ -69,7 +75,9 @@ def draw_immigration_pad():
 def draw_score_pad():
     global SCORE_PAD
     SCORE_PAD.clear()
-    SCORE_PAD.addstr("Score: %s" %(SCORE, ))
+    SCORE_PAD.addstr("Allowed through: %s\t" %(SCORE.num_allowed, ))
+    SCORE_PAD.addstr("Detained: %s\t" %(SCORE.num_detained, ))
+    SCORE_PAD.addstr("Deported: %s" %(SCORE.num_deported, ))
     SCORE_PAD.refresh(0, 0, 3, 0, 3, 75)
     # 32 x 32
 
@@ -241,6 +249,15 @@ def print_immigration_feedback(immigrant_name, choice):
     STDSCR.getch()
 
 def update_score(choice):
+    global SCORE
+    if choice == IMMIGRATION_CHOICE_ENTER:
+        SCORE.num_allowed += 1
+    elif choice == IMMIGRATION_CHOICE_DEPORT:
+        SCORE.num_deported += 1
+    elif choice == IMMIGRATION_CHOICE_DETAIN:
+        SCORE.num_detained += 1
+        
+    draw_score_pad()
     pass
 
 def print_immigrant_hello(immigrant_name):
