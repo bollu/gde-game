@@ -31,8 +31,8 @@ def draw():
     global IMMIGRATION_PAD
     global SCORE_PAD
 
-    INPUT_PAD.refresh(0, 0, 0, 0, 0, 75)
-    RESPONSE_PAD.refresh(0, 0, 1, 0, 1, 75)
+    RESPONSE_PAD.refresh(0, 0, 0, 0, 0, 75)
+    INPUT_PAD.refresh(0, 0, 1, 0, 1, 75)
     IMMIGRATION_PAD.refresh(0, 0, 2, 0, 2, 75)
     SCORE_PAD.clear()
     SCORE_PAD.addstr("Score: %s" %(SCORE, ))
@@ -45,7 +45,7 @@ def print_prompt(s):
     global RESPONSE_PAD
     global STDSCR
     INPUT_PAD.clear()
-    INPUT_PAD.addstr('officer:')
+    INPUT_PAD.addstr('officer: ')
     draw()
     # blob = TextBlob(s)
 
@@ -70,8 +70,11 @@ def read_input():
     global STDSCR
     # stdscr.refresh()
     s = ""
-    print_prompt(s)
     while True:
+        if s == "":
+            print_prompt("(Type to respond)")
+        else:
+            print_prompt(s)
         c = STDSCR.getch()
         if c == curses.KEY_BACKSPACE:
             s = s[:-1]
@@ -79,14 +82,13 @@ def read_input():
             return s
         else:
             s += chr(c)
-        print_prompt(s)
         # stdscr.refresh()
 
 def compute_response(i):
     return "response"
 
 
-def print_response(name, r):
+def print_immigrant(name, r):
     global INPUT_PAD
     global RESPONSE_PAD
     global STDSCR
@@ -137,6 +139,9 @@ def print_immigration_feedback(choice):
 def update_score(choice):
     pass
 
+def print_immigrant_hello():
+    print_immigrant("foo", "hello. My name is foo")
+
 def main(stdscr):
     global INPUT_PAD
     global RESPONSE_PAD
@@ -163,15 +168,21 @@ def main(stdscr):
     draw()
     STDSCR.refresh()
 
+
+    print_immigrant_hello()
+    draw()
+    
     # Allow for dialogue
     # ==================
     for i in range(3):
         draw()
+
+
         i = read_input()
 
         # Print out output
         r = compute_response(i)
-        print_response("sid", r)
+        print_immigrant("sid", r)
 
     # Provide options
     # ===============
@@ -185,5 +196,4 @@ def main(stdscr):
 
 if __name__ == "__main__":
     wrapper(main)
-
 
