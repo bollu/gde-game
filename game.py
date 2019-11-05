@@ -18,6 +18,10 @@ INPUT_PAD = None
 RESPONSE_PAD = None
 STDSCR = None
 IMMIGRATION_PAD = None
+SCORE_PAD = None
+
+# Score is just permanantly drawn
+SCORE = 0
 
 
 def draw():
@@ -25,10 +29,15 @@ def draw():
     global RESPONSE_PAD
     global STDSCR
     global IMMIGRATION_PAD
+    global SCORE_PAD
 
     INPUT_PAD.refresh(0, 0, 0, 0, 0, 75)
     RESPONSE_PAD.refresh(0, 0, 1, 0, 1, 75)
     IMMIGRATION_PAD.refresh(0, 0, 2, 0, 2, 75)
+    SCORE_PAD.clear()
+    SCORE_PAD.addstr("Score: %s" %(SCORE, ))
+    SCORE_PAD.refresh(0, 0, 3, 0, 3, 75)
+
     STDSCR.refresh()
 
 def print_prompt(s):
@@ -122,10 +131,10 @@ def read_immigration():
             return choices[i]
 
 
-def print_immigration_feedback():
+def print_immigration_feedback(choice):
     pass
 
-def update_score():
+def update_score(choice):
     pass
 
 def main(stdscr):
@@ -133,11 +142,13 @@ def main(stdscr):
     global RESPONSE_PAD
     global STDSCR
     global IMMIGRATION_PAD
+    global SCORE_PAD
 
     STDSCR = stdscr
     INPUT_PAD = curses.newpad(1, 80)
     RESPONSE_PAD = curses.newpad(1, 80)
     IMMIGRATION_PAD = curses.newpad(1, 80)
+    SCORE_PAD = curses.newpad(1, 80)
 
     # Clear screen
     curses.start_color()
@@ -151,7 +162,6 @@ def main(stdscr):
     STDSCR.clear()
     draw()
     STDSCR.refresh()
-
 
     # Allow for dialogue
     # ==================
