@@ -4,9 +4,9 @@ from curses import wrapper
 from curses.textpad import Textbox, rectangle
 from curses import ascii
 import time
-# from textblob import TextBlob
+from textblob import TextBlob
 # from textblob.sentiments import NaiveBayesAnalyzer
-# from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer 
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer 
 
 
 
@@ -22,6 +22,9 @@ SCORE_PAD = None
 
 # Score is just permanantly drawn
 SCORE = 0
+
+sid_obj = SentimentIntensityAnalyzer() 
+
 
 
 def draw():
@@ -40,7 +43,7 @@ def draw():
 
     STDSCR.refresh()
 
-def print_prompt(s):
+def print_officer_prompt(s):
     global INPUT_PAD
     global RESPONSE_PAD
     global STDSCR
@@ -51,14 +54,14 @@ def print_prompt(s):
 
     words = s.split(' ')
     for i, w in enumerate(words):
-        # senti = sid_obj.polarity_scores(w)
-        # if senti['neg'] >= 0.5: pad.addstr(w, curses.color_pair(PAIR_RED_ON_WHITE))
-        # elif senti['pos'] >= 0.5: pad.addstr(w, curses.color_pair(PAIR_GREEN_ON_WHITE))
-        # else: pad.addstr(w)
+        senti = sid_obj.polarity_scores(w)
+        if senti['neg'] >= 0.5: INPUT_PAD.addstr(w, curses.color_pair(PAIR_RED_ON_WHITE))
+        elif senti['pos'] >= 0.5: INPUT_PAD.addstr(w, curses.color_pair(PAIR_GREEN_ON_WHITE))
+        else: INPUT_PAD.addstr(w)
         
 
         # pad.addstr(w, curses.COLOR_RED)
-        INPUT_PAD.addstr(w)
+        # INPUT_PAD.addstr(w)
         draw()
         #for c in w:
         #    pad.addch(0, ord(c))
@@ -72,9 +75,9 @@ def read_input():
     s = ""
     while True:
         if s == "":
-            print_prompt("(Type to respond)")
+            print_officer_prompt("(Type to respond)")
         else:
-            print_prompt(s)
+            print_officer_prompt(s)
         c = STDSCR.getch()
         if c == curses.KEY_BACKSPACE:
             s = s[:-1]
@@ -93,13 +96,35 @@ def print_immigrant(name, r):
     global RESPONSE_PAD
     global STDSCR
 
-    s = ""
-    for c in r:
-        s += c
+    rencoded = TextBlob(r).translate(to='ar')
+
+    for i in range(len(r)+1):
+        s = rencoded[:i]
         RESPONSE_PAD.clear()
         RESPONSE_PAD.addstr("%s: %s" %(name, s))
         draw()
-        time.sleep(1e-2)
+        time.sleep(0.05)
+
+
+    for i in range(len(r)+1):
+        s = r[:i] + str(rencoded[i:])
+        RESPONSE_PAD.clear()
+        RESPONSE_PAD.addstr("%s: %s" %(name, s))
+        draw()
+        time.sleep(0.05)
+
+
+def print_officer(name, out):
+    global INPUT_PAD
+    global STDSCR
+
+    s = ""
+    for c in out:
+        s += c
+        INPUT_PAD.clear()
+        INPUT_PAD.addstr("%s: %s" %(name, s))
+        draw()
+        time.sleep(0.1)
 
 
 IMMIGRATION_CHOICE_ENTER = 'ENTER'
@@ -162,35 +187,40 @@ def main(stdscr):
     curses.init_pair(PAIR_GREEN_ON_WHITE, curses.COLOR_GREEN, -1)
     curses.init_pair(PAIR_WHITE_ON_BLUE, curses.COLOR_WHITE, curses.COLOR_BLUE)
 
-    # for i in range(0, curses.COLORS):
-    #     curses.init_pair(i + 1, i, -1)
     STDSCR.clear()
     draw()
     STDSCR.refresh()
 
 
-    print_immigrant_hello()
-    draw()
-    
-    # Allow for dialogue
-    # ==================
-    for i in range(3):
+    for i in range(10):
+        # ask for new immigrant
+        RESPONSE_PAD.clear()
+        IMMIGRATION_PAD.clear()
         draw()
+        print_officer("officer", "next, please!")
+        time.sleep(0.1)
 
+        # Have immigrant say hello
+        print_immigrant_hello()
+        draw()
+        
+        # Allow for dialogue
+        # ==================
+        for i in range(3):
+            draw()
+            i = read_input()
 
-        i = read_input()
+            # Print out output
+            r = compute_response(i)
+            print_immigrant("sid", r)
 
-        # Print out output
-        r = compute_response(i)
-        print_immigrant("sid", r)
+        # Provide options
+        # ===============
+        immigration_status = read_immigration()
 
-    # Provide options
-    # ===============
-    immigration_status = read_immigration()
-
-    # Print what happens to them, update score
-    print_immigration_feedback(immigration_status)
-    update_score(immigration_status)
+        # Print what happens to them, update score
+        print_immigration_feedback(immigration_status)
+        update_score(immigration_status)
 
 
 
