@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.6
 import curses
 from curses import wrapper
 from curses.textpad import Textbox, rectangle
@@ -8,7 +8,14 @@ import random
 from textblob import TextBlob
 from textblob.sentiments import NaiveBayesAnalyzer
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer 
+import imageio
 
+
+sprite = imageio.imread('sprite.png')
+print(sprite.shape)
+
+
+TIME_SHORT_PAUSE=0.3
 CHARACTER_SHOW_DELAY_REGULAR=0.01
 
 sentimentAnalyzer = SentimentIntensityAnalyzer() 
@@ -23,29 +30,48 @@ CHOICES_PAD = None
 STDSCR = None
 IMMIGRATION_PAD = None
 SCORE_PAD = None
+VIEW_PAD = None
 
 # Score is just permanantly drawn
 SCORE = 0
 
 sid_obj = SentimentIntensityAnalyzer() 
 
+# characters representing grayscale, from black -> white
+GRAYSCALE_SEQ = '$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,"^`\'. '
 
-def draw():
+
+def render_png(png):
+    global VIEW_PAD
+    for i in range(32):
+        for j in range(32):
+            c = png[i][j]
+            gray = (0.2989*c[0] + 0.5870*c[1] + 0.1140*c[2]) / 255.0
+            c = GRAYSCALE_SEQ[int(gray * len(GRAYSCALE_SEQ))]
+            VIEW_PAD.addch(j, i, c)
+    pass
+
+
+def draw_input_pad():
     global INPUT_PAD
-    global CHOICES_PAD
-    global STDSCR
-    global IMMIGRATION_PAD
-    global SCORE_PAD
-
-    CHOICES_PAD.refresh(0, 0, 0, 0, 0, 75)
     INPUT_PAD.refresh(0, 0, 1, 0, 1, 75)
+
+
+def draw_choices_pad():
+    global CHOICES_PAD
+    CHOICES_PAD.refresh(0, 0, 0, 0, 0, 75)
+
+
+def draw_immigration_pad():
+    global IMMIGRATION_PAD
     IMMIGRATION_PAD.refresh(0, 0, 2, 0, 2, 75)
+
+def draw_score_pad():
+    global SCORE_PAD
     SCORE_PAD.clear()
     SCORE_PAD.addstr("Score: %s" %(SCORE, ))
     SCORE_PAD.refresh(0, 0, 3, 0, 3, 75)
-
-    STDSCR.refresh()
-
+    # 32 x 32
 
 def print_officer_prompt(s):
     global INPUT_PAD
@@ -53,7 +79,7 @@ def print_officer_prompt(s):
     global STDSCR
     INPUT_PAD.clear()
     INPUT_PAD.addstr('officer: ')
-    draw()
+    draw_input_pad()
     # blob = TextBlob(s)
 
     words = s.split(' ')
@@ -64,10 +90,8 @@ def print_officer_prompt(s):
         else: INPUT_PAD.addstr(w)
         
 
-        draw()
-        #for c in w:
-        #    pad.addch(0, ord(c))
         if i < len(words)-1: INPUT_PAD.addch(0, ord(' '))
+        draw_input_pad()
 
 
 def assert_in_game(b):
@@ -81,7 +105,7 @@ def assert_in_game(b):
     for i in range(len(s)+1):
         INPUT_PAD.clear()
         INPUT_PAD.addstr(s[:i])
-        draw()
+        draw_input_pad()
         time.sleep(CHARACTER_SHOW_DELAY_REGULAR)
     time.sleep(2)
     raise Exception("Game ended.")
@@ -131,7 +155,7 @@ def print_immigrant(r):
         s = rencoded[:i]
         CHOICES_PAD.clear()
         CHOICES_PAD.addstr("%s" %(s,))
-        draw()
+        draw_choices_pad()
         time.sleep(CHARACTER_SHOW_DELAY_REGULAR)
 
 
@@ -139,7 +163,7 @@ def print_immigrant(r):
         s = r[:i] + str(rencoded[i:])
         CHOICES_PAD.clear()
         CHOICES_PAD.addstr("%s" %(s))
-        draw()
+        draw_choices_pad()
         time.sleep(CHARACTER_SHOW_DELAY_REGULAR)
 
 
@@ -152,7 +176,7 @@ def print_officer(name, out):
         s += c
         INPUT_PAD.clear()
         INPUT_PAD.addstr("%s: %s" %(name, s))
-        draw()
+        draw_input_pad()
         time.sleep(CHARACTER_SHOW_DELAY_REGULAR)
 
 
@@ -176,7 +200,7 @@ def read_immigration_choice():
                 IMMIGRATION_PAD.addstr("%s\t" % (choices[i], ), curses.color_pair(PAIR_WHITE_ON_BLUE))
             else:
                 IMMIGRATION_PAD.addstr("%s\t" % (choices[i], ))
-        draw()
+            draw_immigration_pad()
 
         c = STDSCR.getch()
         if c == curses.KEY_RIGHT:
@@ -211,7 +235,7 @@ def print_immigration_feedback(immigrant_name, choice):
     for i in range(len(s) + 1):
         IMMIGRATION_PAD.clear()
         IMMIGRATION_PAD.addstr(s[:i])
-        draw()
+        draw_immigration_pad()
         time.sleep(CHARACTER_SHOW_DELAY_REGULAR)
     time.sleep(1)
     STDSCR.getch()
@@ -222,12 +246,17 @@ def update_score(choice):
 def print_immigrant_hello(immigrant_name):
     print_immigrant("hello. My name is " + immigrant_name)
 
+def load_bitmap(path):
+    pass
+
+
 def main(stdscr):
     global INPUT_PAD
     global CHOICES_PAD
     global STDSCR
     global IMMIGRATION_PAD
     global SCORE_PAD
+    global VIEW_PAD
 
     with open("immigrant_names.txt", "r") as f:
         IMMIGRANT_NAMES = [name.split("\n")[0] for name in f.readlines()]
@@ -239,6 +268,7 @@ def main(stdscr):
     CHOICES_PAD = curses.newpad(1, 80)
     IMMIGRATION_PAD = curses.newpad(1, 80)
     SCORE_PAD = curses.newpad(1, 80)
+    VIEW_PAD = curses.newpad(40, 40)
 
     # disable input
     STDSCR.keypad(0)
@@ -251,8 +281,11 @@ def main(stdscr):
     curses.init_pair(PAIR_WHITE_ON_BLUE, curses.COLOR_WHITE, curses.COLOR_BLUE)
 
     STDSCR.clear()
-    draw()
     STDSCR.refresh()
+
+
+    render_png(sprite)
+    VIEW_PAD.refresh(0, 0, 4, 0, 4 + 32, 32)
     
     for i in range(10):
         immigrant_name = IMMIGRANT_NAMES[0]
@@ -261,18 +294,20 @@ def main(stdscr):
         # ask for new immigrant
         CHOICES_PAD.clear()
         IMMIGRATION_PAD.clear()
-        draw()
+        draw_immigration_pad()
+        draw_choices_pad()
+
         print_officer("officer", "next, please!")
-        time.sleep(0.3)
+        time.sleep(TIME_SHORT_PAUSE)
 
         # Have immigrant say hello
         print_immigrant_hello(immigrant_name)
-        draw()
+        # draw_immigration_pad()
         
         # Allow for dialogue
         # ==================
         for i in range(3):
-            draw()
+            time.sleep(TIME_SHORT_PAUSE)
             i = read_input()
 
             # Print out output
@@ -281,13 +316,13 @@ def main(stdscr):
 
         # Provide options
         # ===============
+        time.sleep(TIME_SHORT_PAUSE)
         immigration_choice = read_immigration_choice()
+        time.sleep(TIME_SHORT_PAUSE)
 
         # Print what happens to them, update score
         print_immigration_feedback(immigrant_name, immigration_choice)
         update_score(immigration_choice)
-
-
 
 if __name__ == "__main__":
     wrapper(main)
