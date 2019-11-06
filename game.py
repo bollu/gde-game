@@ -9,6 +9,7 @@ from textblob import TextBlob
 from textblob.sentiments import NaiveBayesAnalyzer
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer 
 import imageio
+import datetime
 
 
 sprite = imageio.imread('sprite.png')
@@ -16,7 +17,7 @@ print(sprite.shape)
 
 
 TIME_SHORT_PAUSE=0.3
-CHARACTER_SHOW_DELAY_REGULAR=0.01
+CHARACTER_SHOW_DELAY_REGULAR=0.06
 
 sentimentAnalyzer = SentimentIntensityAnalyzer() 
 
@@ -31,6 +32,7 @@ STDSCR = None
 IMMIGRATION_PAD = None
 SCORE_PAD = None
 VIEW_PAD = None
+TIMER_PAD = None
 
 class Score:
     def __init__(self):
@@ -38,10 +40,34 @@ class Score:
         self.num_allowed = 0
         self.num_detained = 0
 
+
+class Timer:
+    def __init__(self):
+        self.start_timer()
+
+    def start_timer(self):
+        self.t = datetime.datetime.utcnow()
+
+    def get_seconds_left(self):
+        t = datetime.datetime.utcnow()
+        delta = t - self.t
+        # 10 minutes - whatever time has elapsed
+        return max(0, 10 * 60 - delta.seconds)
+
+    def get_time_left_str(self):
+        secs = self.get_seconds_left()
+        minutes = secs // 60
+        secs = secs - minutes * 60
+
+        return "%s:%s" % (minutes, secs)
+
+    def is_time_left(self):
+        self.get_seconds_left() > 0
+
 # Score is just permanantly drawn
 SCORE = Score()
+TIMER = Timer()
 
-sid_obj = SentimentIntensityAnalyzer() 
 
 # characters representing grayscale, from black -> white
 GRAYSCALE_SEQ = '$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,"^`\'. '
@@ -61,16 +87,22 @@ def render_png(png):
 def draw_input_pad():
     global INPUT_PAD
     INPUT_PAD.refresh(0, 0, 1, 0, 1, 75)
+    print_time()
+    draw_timer_pad()
 
 
 def draw_choices_pad():
     global CHOICES_PAD
     CHOICES_PAD.refresh(0, 0, 0, 0, 0, 75)
+    print_time()
+    draw_timer_pad()
 
 
 def draw_immigration_pad():
     global IMMIGRATION_PAD
     IMMIGRATION_PAD.refresh(0, 0, 2, 0, 2, 75)
+    print_time()
+    draw_timer_pad()
 
 def draw_score_pad():
     global SCORE_PAD
@@ -79,7 +111,13 @@ def draw_score_pad():
     SCORE_PAD.addstr("Detained: %s\t" %(SCORE.num_detained, ))
     SCORE_PAD.addstr("Deported: %s" %(SCORE.num_deported, ))
     SCORE_PAD.refresh(0, 0, 3, 0, 3, 75)
+    print_time()
+    draw_timer_pad()
     # 32 x 32
+
+def draw_timer_pad():
+    global TIMER_PAD
+    TIMER_PAD.refresh(0, 0, 4, 0, 4, 75)
 
 def print_officer_prompt(s):
     global INPUT_PAD
@@ -266,6 +304,12 @@ def print_immigrant_hello(immigrant_name):
 def load_bitmap(path):
     pass
 
+def print_time():
+    global TIMER
+    global TIMER_PAD
+    TIMER_PAD.clear()
+    TIMER_PAD.addstr("Tme left: %s" % TIMER.get_time_left_str())
+
 
 def main(stdscr):
     global INPUT_PAD
@@ -274,6 +318,7 @@ def main(stdscr):
     global IMMIGRATION_PAD
     global SCORE_PAD
     global VIEW_PAD
+    global TIMER_PAD
 
     with open("immigrant_names.txt", "r") as f:
         IMMIGRANT_NAMES = [name.split("\n")[0] for name in f.readlines()]
@@ -286,6 +331,7 @@ def main(stdscr):
     IMMIGRATION_PAD = curses.newpad(1, 80)
     SCORE_PAD = curses.newpad(1, 80)
     VIEW_PAD = curses.newpad(40, 40)
+    TIMER_PAD = curses.newpad(1, 80)
 
     # disable input
     STDSCR.keypad(0)
