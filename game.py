@@ -11,6 +11,10 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import imageio
 import datetime
 
+BLOCKCHAR = "█"
+BOTTOMHALFBLOCKCHAR="▄"
+TOPHALFBLOCKCHAR="▄"
+
 
 sprite = imageio.imread('sprite.png')
 print(sprite.shape)
@@ -33,6 +37,7 @@ IMMIGRATION_PAD = None
 SCORE_PAD = None
 VIEW_PAD = None
 TIMER_PAD = None
+IMMIGRANT_INFO_PAD=None
 
 class Score:
     def __init__(self):
@@ -64,13 +69,16 @@ class Timer:
     def is_time_left(self):
         self.get_seconds_left() > 0
 
-EDUCATION_PRIMARY_SCHOOL = 0
+EDUCATION_UNKNOWN = 0
+EDUCATION_PRIMARY_SCHOOL = EDUCATION_UNKNOWN + 1
+EDUCATION_HIGH_SCHOOL = EDUCATION_PRIMARY_SCHOOL + 1
 EDUCATION_HIGH_SCHOOL = EDUCATION_PRIMARY_SCHOOL + 1
 EDUCATION_UNDERGRADUATE = EDUCATION_HIGH_SCHOOL + 1
 EDUCATION_POSTGRADUATE = EDUCATION_UNDERGRADUATE + 1
 NUM_EDUCATIONS = EDUCATION_POSTGRADUATE + 1
 
 EDUCATIONS = {}
+EDUCATIONS[EDUCATION_UNKNOWN] = "unknown"
 EDUCATIONS[EDUCATION_PRIMARY_SCHOOL] = "primary school"
 EDUCATIONS[EDUCATION_HIGH_SCHOOL] = "high school"
 EDUCATIONS[EDUCATION_UNDERGRADUATE] = "undergraduate"
@@ -85,14 +93,12 @@ OCCUPATION_LABOURER = OCCUPATION_DOCTOR + 1
 OCCUPATION_CARPET_SELLER = OCCUPATION_LABOURER + 1
 OCCUPATION_FARMER = OCCUPATION_CARPET_SELLER + 1
 
-OCCUPATIONS = {}
-OCCUPATIONS[OCCUPATION_BASKET_WEAVER] = "basket weaver"
-OCCUPATIONS[OCCUPATION_MILITARY] = "soldier"
-OCCUPATIONS[OCCUPATION_LAWYER] = "laywer"
-OCCUPATIONS[OCCUPATION_PRIEST] = "priest"
-OCCUPATIONS[OCCUPATION_DOCTOR] = "doctor"
-OCCUPATIONS[OCCUPATION_CARPET_SELLER] = "carpet seller"
-OCCUPATIONS[OCCUPATION_FARMER] = "farmer"
+LOW_EDU_OCCUPATIONS = {}
+LOW_EDU_OCCUPATIONS[OCCUPATION_BASKET_WEAVER] = "basket weaver"
+LOW_EDU_OCCUPATIONS[OCCUPATION_MILITARY] = "soldier"
+LOW_EDU_OCCUPATIONS[OCCUPATION_PRIEST] = "priest"
+LOW_EDU_OCCUPATIONS[OCCUPATION_CARPET_SELLER] = "carpet seller"
+LOW_EDU_OCCUPATIONS[OCCUPATION_FARMER] = "farmer"
 
 BACKSTORY_CHEMICAL_ATTACK = 0
 BACKSTORY_SHOT = BACKSTORY_CHEMICAL_ATTACK + 1
@@ -122,7 +128,7 @@ REASON_FOR_IMMIGRATION_HIGHER_STUDIES = REASON_FOR_IMMIGRATION_DANGER + 1
 REASON_FOR_IMMIGRATION_HEALTH = REASON_FOR_IMMIGRATION_HIGHER_STUDIES + 1
 
 REASON_FOR_IMMIGRATION = {}
-REASON_FOR_IMMIGRATION[REASON_FOR_IMMIGRATION_HIGHER_STUDIES] = "I am immigrating to escape danger."
+REASON_FOR_IMMIGRATION[REASON_FOR_IMMIGRATION_DANGER] = "I am immigrating to escape danger."
 REASON_FOR_IMMIGRATION[REASON_FOR_IMMIGRATION_HIGHER_STUDIES] = "I am immigrating for higher studies."
 REASON_FOR_IMMIGRATION[REASON_FOR_IMMIGRATION_HEALTH] = "I am immigrating for access to healthcare."
 
@@ -146,17 +152,45 @@ IMMIGRANT_NAMES = load_immigrant_names()
 assert(IMMIGRANT_NAMES)
 
 class Immigrant:
-    def __init__(self, name, occupation, education, age, is_terrorist, tragedies):
+    def __init__(self, name, occupation, education, age, backstory, reason):
         self.name = name
         self.occupation = occupation
         self.education = education
         self.age = age
-        self.is_terrorist = is_terrorist
-        self.tragedies = []
+        self.backstory = backstory
+        self.reason = reason
 
 class ImmigrantGenerator:
     def __init__(self):
-        return
+        self.names = 0
+        self.occu = 0
+        self.edu = 0
+        self.attack = 0
+        self.back = 0
+
+    def new_immigrant(self):
+        name = IMMIGRANT_NAMES[self.names]
+        self.names += 1
+
+        # low education occupations
+        occupation = LOW_EDU_OCCUPATIONS[self.occu + 1]
+        self.occu += 1
+        education =  \
+            EDUCATIONS[EDUCATION_UNKNOWN if random.randint(0, 1) == 0 else EDUCATION_PRIMARY_SCHOOL]
+        age = random.randint(20, 30)
+        backstory = BACKSTORY[self.back]
+        self.back += 1
+
+        reason = REASON_FOR_IMMIGRATION[REASON_FOR_IMMIGRATION_DANGER]
+
+        return Immigrant(name, occupation, education, age, backstory, reason)
+
+    def new_terrorist_attack(self):
+        attack = TERROR_ATTACK[self.attack]
+        self.attack += 1
+
+
+
 
 # Score is just permanantly drawn
 SCORE = Score()
@@ -211,6 +245,12 @@ def draw_score_pad():
 def draw_timer_pad():
     global TIMER_PAD
     TIMER_PAD.refresh(0, 0, 4, 0, 4, 75)
+
+
+# 5 x 75
+def draw_info_pad():
+    global IMMIGRANT_INFO_PAD
+    IMMIGRANT_INFO_PAD.refresh(0, 0, 5, 0, 5 + 15, 75)
 
 def print_officer_prompt(s):
     global INPUT_PAD
@@ -353,20 +393,22 @@ def read_immigration_choice():
     return choices[ix]
 
 
-def print_immigration_feedback(immigrant_name, choice):
+def print_immigration_feedback(generator, immigrant, choice):
     global IMMIGRATION_PAD
     global STDSCR
+    global SCORE
 
     IMMIGRATION_PAD.clear()
 
     s = ""
     if choice == IMMIGRATION_CHOICE_ENTER:
-        s = "%s was let through." % (immigrant_name, )
+        s = "%s was let through." % (immigrant.name, )
+        if SCORE.num_allowed == 0: s += " " + generator.gen_terrorist_attack()
     elif choice == IMMIGRATION_CHOICE_DEPORT:
-        s = "%s was deported." % (immigrant_name, )
+        s = "%s was deported." % (immigrant.name, )
     else: # only possible choice is 
         assert_in_game(choice == IMMIGRATION_CHOICE_DETAIN)
-        s = "%s was detained." % (immigrant_name, )
+        s = "%s was detained." % (immigrant.name, )
 
 
     CHOICES_PAD.clear()
@@ -413,7 +455,7 @@ def main(stdscr):
     global VIEW_PAD
     global TIMER_PAD
     global IMMIGRANT_NAMES
-
+    global IMMIGRANT_INFO_PAD
 
 
     STDSCR = stdscr
@@ -423,6 +465,7 @@ def main(stdscr):
     SCORE_PAD = curses.newpad(1, 80)
     VIEW_PAD = curses.newpad(40, 40)
     TIMER_PAD = curses.newpad(1, 80)
+    IMMIGRANT_INFO_PAD = curses.newpad(15, 80)
 
     # disable input
     STDSCR.keypad(0)
@@ -440,10 +483,11 @@ def main(stdscr):
 
     render_png(sprite)
     VIEW_PAD.refresh(0, 0, 4, 0, 4 + 32, 32)
+
+    generator = ImmigrantGenerator()
     
     for i in range(10):
-        immigrant_name = IMMIGRANT_NAMES[0]
-        IMMIGRANT_NAMES = IMMIGRANT_NAMES[1:]
+        immigrant = generator.new_immigrant()
 
         # ask for new immigrant
         CHOICES_PAD.clear()
@@ -455,7 +499,7 @@ def main(stdscr):
         time.sleep(TIME_SHORT_PAUSE)
 
         # Have immigrant say hello
-        print_immigrant_hello(immigrant_name)
+        print_immigrant_hello(immigrant.name)
         # draw_immigration_pad()
         
         # Allow for dialogue
@@ -475,7 +519,7 @@ def main(stdscr):
         time.sleep(TIME_SHORT_PAUSE)
 
         # Print what happens to them, update score
-        print_immigration_feedback(immigrant_name, immigration_choice)
+        print_immigration_feedback(generator, immigrant, immigration_choice)
         update_score(immigration_choice)
 
 if __name__ == "__main__":
