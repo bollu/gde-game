@@ -11,6 +11,12 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import imageio
 import datetime
 
+TRANSCRIPTS = []
+
+
+N_TOTAL_INTERVIEWS = 5
+N_ROUNDS_PER_INTERVIEW = 3
+
 BLOCKCHAR = "█"
 BOTTOMHALFBLOCKCHAR="▄"
 TOPHALFBLOCKCHAR="▄"
@@ -21,7 +27,7 @@ print(sprite.shape)
 
 
 TIME_SHORT_PAUSE=0.3
-CHARACTER_SHOW_DELAY_REGULAR=0.06
+CHARACTER_SHOW_DELAY_REGULAR=0.04
 
 sentimentAnalyzer = SentimentIntensityAnalyzer() 
 
@@ -56,8 +62,10 @@ class Timer:
     def get_seconds_left(self):
         t = datetime.datetime.utcnow()
         delta = t - self.t
+
+        TIME_MINUTES = 5
         # 10 minutes - whatever time has elapsed
-        return max(0, 10 * 60 - delta.seconds)
+        return max(0, 5 * 60 - delta.seconds)
 
     def get_time_left_str(self):
         secs = self.get_seconds_left()
@@ -167,27 +175,29 @@ class ImmigrantGenerator:
         self.edu = 0
         self.attack = 0
         self.back = 0
+        self.attack = 0
 
     def new_immigrant(self):
-        name = IMMIGRANT_NAMES[self.names]
+        name = IMMIGRANT_NAMES[self.names % len(IMMIGRANT_NAMES)]
         self.names += 1
 
         # low education occupations
-        occupation = LOW_EDU_OCCUPATIONS[self.occu + 1]
+        occupation = LOW_EDU_OCCUPATIONS[(self.occu + 1) % len(LOW_EDU_OCCUPATIONS)]
         self.occu += 1
         education =  \
             EDUCATIONS[EDUCATION_UNKNOWN if random.randint(0, 1) == 0 else EDUCATION_PRIMARY_SCHOOL]
         age = random.randint(20, 30)
-        backstory = BACKSTORY[self.back]
+        backstory = BACKSTORY[self.back % len(BACKSTORY)]
         self.back += 1
 
         reason = REASON_FOR_IMMIGRATION[REASON_FOR_IMMIGRATION_DANGER]
 
         return Immigrant(name, occupation, education, age, backstory, reason)
 
-    def new_terrorist_attack(self):
+    def gen_terrorist_attack(self):
         attack = TERROR_ATTACK[self.attack]
         self.attack += 1
+        return attack
 
 
 
@@ -248,7 +258,7 @@ def draw_timer_pad():
 
 
 # 5 x 75
-def draw_info_pad():
+def draw_immigrant_info_pad():
     global IMMIGRANT_INFO_PAD
     IMMIGRANT_INFO_PAD.refresh(0, 0, 5, 0, 5 + 15, 75)
 
@@ -445,7 +455,6 @@ def print_time():
     TIMER_PAD.clear()
     TIMER_PAD.addstr("Tme left: %s" % TIMER.get_time_left_str())
 
-
 def main(stdscr):
     global INPUT_PAD
     global CHOICES_PAD
@@ -456,16 +465,17 @@ def main(stdscr):
     global TIMER_PAD
     global IMMIGRANT_NAMES
     global IMMIGRANT_INFO_PAD
+    global TRANSCRIPTS
 
 
     STDSCR = stdscr
-    INPUT_PAD = curses.newpad(1, 80)
-    CHOICES_PAD = curses.newpad(1, 80)
-    IMMIGRATION_PAD = curses.newpad(1, 80)
-    SCORE_PAD = curses.newpad(1, 80)
-    VIEW_PAD = curses.newpad(40, 40)
-    TIMER_PAD = curses.newpad(1, 80)
-    IMMIGRANT_INFO_PAD = curses.newpad(15, 80)
+    INPUT_PAD = curses.newpad(1, 800)
+    CHOICES_PAD = curses.newpad(1, 800)
+    IMMIGRATION_PAD = curses.newpad(1, 800)
+    SCORE_PAD = curses.newpad(1, 800)
+    VIEW_PAD = curses.newpad(40, 400)
+    TIMER_PAD = curses.newpad(1, 800)
+    IMMIGRANT_INFO_PAD = curses.newpad(15, 800)
 
     # disable input
     STDSCR.keypad(0)
@@ -486,7 +496,7 @@ def main(stdscr):
 
     generator = ImmigrantGenerator()
     
-    for i in range(10):
+    for _ in range(N_TOTAL_INTERVIEWS):
         immigrant = generator.new_immigrant()
 
         # ask for new immigrant
@@ -504,13 +514,17 @@ def main(stdscr):
         
         # Allow for dialogue
         # ==================
-        for i in range(3):
+        for i in range(N_ROUNDS_PER_INTERVIEW):
+            transcript = ""
             time.sleep(TIME_SHORT_PAUSE)
             i = read_input()
+            transcript += i + "\n"
 
             # Print out output
             r = compute_response(i)
+            transcript += transcript + "\n"
             print_immigrant(r)
+        TRANSCRIPTS.append(transcript)
 
         # Provide options
         # ===============
@@ -521,6 +535,20 @@ def main(stdscr):
         # Print what happens to them, update score
         print_immigration_feedback(generator, immigrant, immigration_choice)
         update_score(immigration_choice)
+
+    # TODO: test this code
+    INPUT_PAD.clear()
+    CHOICES_PAD.clear()
+    STDSCR.clear()
+    IMMIGRATION_PAD.clear()
+    SCORE_PAD.clear()
+    VIEW_PAD.clear()
+    TIMER_PAD.clear()
+    IMMIGRANT_INFO_PAD.clear()
+    for transcript in TRANSCRIPTS:
+        IMMIGRANT_INFO_PAD.clear()
+        IMMIGRANT_INFO_PAD.addstr(transcript)
+        draw_immigrant_info_pad()
 
 if __name__ == "__main__":
     wrapper(main)
