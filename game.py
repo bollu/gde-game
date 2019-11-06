@@ -64,6 +64,100 @@ class Timer:
     def is_time_left(self):
         self.get_seconds_left() > 0
 
+EDUCATION_PRIMARY_SCHOOL = 0
+EDUCATION_HIGH_SCHOOL = EDUCATION_PRIMARY_SCHOOL + 1
+EDUCATION_UNDERGRADUATE = EDUCATION_HIGH_SCHOOL + 1
+EDUCATION_POSTGRADUATE = EDUCATION_UNDERGRADUATE + 1
+NUM_EDUCATIONS = EDUCATION_POSTGRADUATE + 1
+
+EDUCATIONS = {}
+EDUCATIONS[EDUCATION_PRIMARY_SCHOOL] = "primary school"
+EDUCATIONS[EDUCATION_HIGH_SCHOOL] = "high school"
+EDUCATIONS[EDUCATION_UNDERGRADUATE] = "undergraduate"
+EDUCATIONS[EDUCATION_POSTGRADUATE] = "post graduate"
+
+OCCUPATION_BASKET_WEAVER = 0
+OCCUPATION_MILITARY = OCCUPATION_BASKET_WEAVER + 1
+OCCUPATION_LAWYER = OCCUPATION_MILITARY + 1
+OCCUPATION_PRIEST = OCCUPATION_LAWYER + 1
+OCCUPATION_DOCTOR = OCCUPATION_PRIEST + 1
+OCCUPATION_LABOURER = OCCUPATION_DOCTOR + 1
+OCCUPATION_CARPET_SELLER = OCCUPATION_LABOURER + 1
+OCCUPATION_FARMER = OCCUPATION_CARPET_SELLER + 1
+
+OCCUPATIONS = {}
+OCCUPATIONS[OCCUPATION_BASKET_WEAVER] = "basket weaver"
+OCCUPATIONS[OCCUPATION_MILITARY] = "soldier"
+OCCUPATIONS[OCCUPATION_LAWYER] = "laywer"
+OCCUPATIONS[OCCUPATION_PRIEST] = "priest"
+OCCUPATIONS[OCCUPATION_DOCTOR] = "doctor"
+OCCUPATIONS[OCCUPATION_CARPET_SELLER] = "carpet seller"
+OCCUPATIONS[OCCUPATION_FARMER] = "farmer"
+
+BACKSTORY_CHEMICAL_ATTACK = 0
+BACKSTORY_SHOT = BACKSTORY_CHEMICAL_ATTACK + 1
+BACKSTORY_DRONE_STRIKE = BACKSTORY_SHOT + 1
+BACKSTORY_GRENADE = BACKSTORY_DRONE_STRIKE + 1
+BACKSTORY_FAMILY_WOUNDED = BACKSTORY_DRONE_STRIKE + 1
+BACKSTORY_FAMILY_MILITARIZED = BACKSTORY_FAMILY_WOUNDED + 1
+BACKSTORY_HOUSE_DESTROYED = BACKSTORY_FAMILY_MILITARIZED + 1
+BACKSTORY_FAMILY_KILLED_BY_REGIME = BACKSTORY_HOUSE_DESTROYED + 1
+BACKSTORY_FAMILY_RANSOMED = BACKSTORY_FAMILY_KILLED_BY_REGIME + 1
+BACKSTORY_FAMILY_MILITARIZED = BACKSTORY_FAMILY_RANSOMED + 1
+
+BACKSTORY = {}
+BACKSTORY[BACKSTORY_CHEMICAL_ATTACK] = "I was chemically attacked."
+BACKSTORY[BACKSTORY_SHOT] = "I was shot by terrorists."
+BACKSTORY[BACKSTORY_DRONE_STRIKE] = "I was injured during a drone strike"
+BACKSTORY[BACKSTORY_GRENADE] = "I was grenaded. Here seeking safety."
+BACKSTORY[BACKSTORY_FAMILY_WOUNDED] = "My family wounded by terrorist attack."
+BACKSTORY[BACKSTORY_FAMILY_MILITARIZED] = "My family wounded by ISIS."
+BACKSTORY[BACKSTORY_HOUSE_DESTROYED] = "My home was destroyed by bombing."
+BACKSTORY[BACKSTORY_FAMILY_KILLED_BY_REGIME] = "My family was killed by the ruling regime."
+BACKSTORY[BACKSTORY_FAMILY_RANSOMED] = "My family was ransomed by the ruling regime."
+BACKSTORY[BACKSTORY_FAMILY_MILITARIZED] = "My son was militarized by ISIS."
+
+REASON_FOR_IMMIGRATION_DANGER = 0
+REASON_FOR_IMMIGRATION_HIGHER_STUDIES = REASON_FOR_IMMIGRATION_DANGER + 1
+REASON_FOR_IMMIGRATION_HEALTH = REASON_FOR_IMMIGRATION_HIGHER_STUDIES + 1
+
+REASON_FOR_IMMIGRATION = {}
+REASON_FOR_IMMIGRATION[REASON_FOR_IMMIGRATION_HIGHER_STUDIES] = "I am immigrating to escape danger."
+REASON_FOR_IMMIGRATION[REASON_FOR_IMMIGRATION_HIGHER_STUDIES] = "I am immigrating for higher studies."
+REASON_FOR_IMMIGRATION[REASON_FOR_IMMIGRATION_HEALTH] = "I am immigrating for access to healthcare."
+
+TERROR_ATTACK_ASSASSINATION_ATTEMPT = 0
+TERROR_ATTACK_RELIGIOUS_SHOOTING = TERROR_ATTACK_ASSASSINATION_ATTEMPT + 1
+TERROR_ATTACK_SUICIDE_BOMB = TERROR_ATTACK_RELIGIOUS_SHOOTING + 1
+TERROR_ATTACK_POISON_WATER = TERROR_ATTACK_SUICIDE_BOMB + 1
+
+TERROR_ATTACK = {}
+TERROR_ATTACK[TERROR_ATTACK_ASSASSINATION_ATTEMPT] = "They have attempted to assassinate a politician."
+TERROR_ATTACK[TERROR_ATTACK_RELIGIOUS_SHOOTING] = "They were responsible for a religiously motivated shooting."
+TERROR_ATTACK[TERROR_ATTACK_SUICIDE_BOMB] = "They are responsible for a suicide bombing."
+TERROR_ATTACK[TERROR_ATTACK_POISON_WATER] = "They have poisoned the city water."
+
+def load_immigrant_names():
+    with open("immigrant_names.txt", "r") as f:
+        names = [name.split("\n")[0] for name in f.readlines()]
+    return names
+
+IMMIGRANT_NAMES = load_immigrant_names()
+assert(IMMIGRANT_NAMES)
+
+class Immigrant:
+    def __init__(self, name, occupation, education, age, is_terrorist, tragedies):
+        self.name = name
+        self.occupation = occupation
+        self.education = education
+        self.age = age
+        self.is_terrorist = is_terrorist
+        self.tragedies = []
+
+class ImmigrantGenerator:
+    def __init__(self):
+        return
+
 # Score is just permanantly drawn
 SCORE = Score()
 TIMER = Timer()
@@ -81,7 +175,6 @@ def render_png(png):
             gray = (0.2989*c[0] + 0.5870*c[1] + 0.1140*c[2]) / 255.0
             c = GRAYSCALE_SEQ[int(gray * len(GRAYSCALE_SEQ))]
             VIEW_PAD.addch(j, i, c)
-    pass
 
 
 def draw_input_pad():
@@ -319,10 +412,8 @@ def main(stdscr):
     global SCORE_PAD
     global VIEW_PAD
     global TIMER_PAD
+    global IMMIGRANT_NAMES
 
-    with open("immigrant_names.txt", "r") as f:
-        IMMIGRANT_NAMES = [name.split("\n")[0] for name in f.readlines()]
-    random.shuffle(IMMIGRANT_NAMES)
 
 
     STDSCR = stdscr
