@@ -12,14 +12,15 @@ import imageio
 import datetime
 from nltk.corpus import wordnet
 
-TRANSCRIPTS = []
+DEBUG_USE_OTHER_LANGUAGE_PRINTING=False
+DETRANSCRIPTS = []
 
 # TIME_SHORT_PAUSE=0.3
 # CHARACTER_SHOW_DELAY_REGULAR=0.04
 
 
-TIME_SHORT_PAUSE=0.0
-CHARACTER_SHOW_DELAY_REGULAR=0.00
+TIME_SHORT_PAUSE=0.3
+CHARACTER_SHOW_DELAY_REGULAR=0.05
 
 N_TOTAL_INTERVIEWS = 5
 N_ROUNDS_PER_INTERVIEW = 3
@@ -428,13 +429,55 @@ def read_input():
         return choices[ix]
 
 
+def transliterate_arabic(arabic):
+    s = ""
+    trans_dict = {
+            "ا": "A",
+            "ب": "b",
+            "ت": "t",
+            "ث": "th",
+            "ج": "j",
+            "ح": "H",
+            "خ": "x",
+            "د": "d",
+            "ذ": "dh",
+            "ر": "r",
+            "ز": "z",
+            "س": "s",
+            "ش": "sh",
+            "ص": "S",
+            "ض":"D",
+            "ط":"T",
+            "ظ":"Z",
+            "ع":"E",
+            "غ":"g",
+            "ف": "f",
+            "ق":"q",
+            "ك":"k",
+            "ل":"l",
+            "م":"m",
+            "ن":"n",
+            "ه":"h",
+            "و":"w",
+            "ي":"y",
+            "ی":"Y"
+            }
+
+    for letter in arabic:
+        if letter in trans_dict:
+            s += trans_dict[letter]
+    return s
+
 
 def print_immigrant(r):
     global INPUT_PAD
     global CHOICES_PAD
     global STDSCR
 
-    rencoded = TextBlob(r).translate(to='ar')
+    if DEBUG_USE_OTHER_LANGUAGE_PRINTING:
+        rencoded = TextBlob(r).translate(to='ar')
+    else:
+        rencoded = transliterate_arabic(TextBlob(r).translate(to='ar'))
 
     for i in range(len(r)+1):
         s = rencoded[:i]
