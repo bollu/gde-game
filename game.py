@@ -48,7 +48,10 @@ IMMIGRATION_PAD = None
 SCORE_PAD = None
 VIEW_PAD = None
 TIMER_PAD = None
+IMMIGRANT_INFO_NAME_PAD=None
+IMMIGRANT_INFO_AGE_PAD=None
 IMMIGRANT_INFO_OCCUPATION_PAD=None
+IMMIGRANT_INFO_COUNTRY_PAD=None
 
 class Score:
     def __init__(self):
@@ -227,9 +230,12 @@ class ImmigrantInfoDiscovered:
         self.backstory_discovered = False
         self.danger_discovered = False
         self.age_discovered = False
+        self.name_discovered = False
         self.reason_discovered = False
 
         self.occupation_newly_discovered = False
+        self.age_newly_discovered = False
+        self.name_newly_discovered = False
 
     def get_response(self, r):
         for w in TextBlob(r).words:
@@ -300,11 +306,22 @@ def draw_timer_pad():
     global TIMER_PAD
     TIMER_PAD.refresh(0, 0, 4, 0, 4, 75)
 
+# (name, age, occupation)
 
-# 5 x 75
+# 5 
+def draw_immigrant_name_info_pad():
+    global IMMIGRANT_INFO_NAME_PAD
+    IMMIGRANT_INFO_NAME_PAD.refresh(0, 0, 5, 0, 5 + 1, 75)
+
+def draw_immigrant_age_info_pad():
+    global IMMIGRANT_INFO_AGE_PAD
+    IMMIGRANT_INFO_AGE_PAD.refresh(0, 0, 6, 0, 6+ 1, 75)
+# 6
 def draw_immigrant_occupation_info_pad():
     global IMMIGRANT_INFO_OCCUPATION_PAD
-    IMMIGRANT_INFO_OCCUPATION_PAD.refresh(0, 0, 5, 0, 5 + 1, 75)
+    IMMIGRANT_INFO_OCCUPATION_PAD.refresh(0, 0, 7, 0, 7 + 1, 75)
+
+
 
 def print_officer_prompt(s, enabled):
     global INPUT_PAD
@@ -454,12 +471,26 @@ def print_immigrant_info(immigrantInfo):
             pad.addstr("%s: %s" % (name, value))
             renderer()
 
+    print_info_animated(IMMIGRANT_INFO_NAME_PAD, 
+            draw_immigrant_name_info_pad, 
+            "name", 
+            immigrantInfo.immigrant.name if immigrantInfo.name_discovered else "???", 
+            animated=immigrantInfo.name_newly_discovered)
+
+    print_info_animated(IMMIGRANT_INFO_AGE_PAD, 
+            draw_immigrant_age_info_pad, 
+            "age", 
+            immigrantInfo.immigrant.age if immigrantInfo.age_discovered else "???", 
+            animated=immigrantInfo.age_newly_discovered)
 
     print_info_animated(IMMIGRANT_INFO_OCCUPATION_PAD, 
             draw_immigrant_occupation_info_pad, 
             "occupation", 
             immigrantInfo.immigrant.occupation if immigrantInfo.occupation_discovered else "???", 
             animated=immigrantInfo.occupation_newly_discovered)
+
+
+
 
 def print_officer(name, out):
     global INPUT_PAD
@@ -548,8 +579,6 @@ def update_score(choice):
     draw_score_pad()
     pass
 
-def print_immigrant_hello(immigrant_name):
-    print_immigrant("hello. My name is " + immigrant_name)
 
 def load_bitmap(path):
     pass
@@ -570,6 +599,8 @@ def main(stdscr):
     global TIMER_PAD
     global IMMIGRANT_NAMES
     global IMMIGRANT_INFO_OCCUPATION_PAD
+    global IMMIGRANT_INFO_NAME_PAD
+    global IMMIGRANT_INFO_AGE_PAD
     global TRANSCRIPTS
 
 
@@ -581,6 +612,9 @@ def main(stdscr):
     VIEW_PAD = curses.newpad(40, 400)
     TIMER_PAD = curses.newpad(1, 800)
     IMMIGRANT_INFO_OCCUPATION_PAD = curses.newpad(1, 800)
+    IMMIGRANT_INFO_NAME_PAD = curses.newpad(1, 800)
+    IMMIGRANT_INFO_AGE_PAD = curses.newpad(1, 800)
+    IMMIGRANT_INFO_COUNTRY_PAD = curses.newpad(1, 800)
 
     # disable input
     STDSCR.keypad(0)
@@ -615,7 +649,8 @@ def main(stdscr):
         time.sleep(TIME_SHORT_PAUSE)
 
         # Have immigrant say hello
-        print_immigrant_hello(immigrant.name)
+        print_immigrant("Good morning, officer")
+
         # draw_immigration_pad()
         
         # Allow for dialogue
@@ -654,11 +689,10 @@ def main(stdscr):
     SCORE_PAD.clear()
     VIEW_PAD.clear()
     TIMER_PAD.clear()
-    IMMIGRANT_INFO_OCCUPATION_PAD.clear()
-    for transcript in TRANSCRIPTS:
-        IMMIGRANT_INFO_OCCUPATION_PAD.clear()
-        IMMIGRANT_INFO_OCCUPATION_PAD.addstr(transcript)
-        draw_immigrant_occupation_info_pad()
+    # IMMIGRANT_INFO_OCCUPATION_PAD.clear()
+    # for transcript in TRANSCRIPTS:
+    #     IMMIGRANT_INFO_OCCUPATION_PAD.clear()
+    #     IMMIGRANT_INFO_OCCUPATION_PAD.addstr(transcript)
 
 if __name__ == "__main__":
     wrapper(main)
