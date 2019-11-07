@@ -14,6 +14,12 @@ from nltk.corpus import wordnet
 
 TRANSCRIPTS = []
 
+# TIME_SHORT_PAUSE=0.3
+# CHARACTER_SHOW_DELAY_REGULAR=0.04
+
+
+TIME_SHORT_PAUSE=0.0
+CHARACTER_SHOW_DELAY_REGULAR=0.00
 
 N_TOTAL_INTERVIEWS = 5
 N_ROUNDS_PER_INTERVIEW = 3
@@ -27,8 +33,6 @@ sprite = imageio.imread('sprite.png')
 print(sprite.shape)
 
 
-TIME_SHORT_PAUSE=0.3
-CHARACTER_SHOW_DELAY_REGULAR=0.04
 
 sentimentAnalyzer = SentimentIntensityAnalyzer() 
 
@@ -398,22 +402,24 @@ def print_immigrant_info(immigrantInfo):
     global IMMIGRANT_INFO_OCCUPATION_PAD
     IMMIGRANT_INFO_OCCUPATION_PAD.clear()
 
-    def print_info_animated(pad, name, value):
-        for i in range(len(value)) + 1:
+    def print_info_animated(pad, renderer, name, value, animated):
+        if animated:
+            for i in range(len(value) + 1):
+                pad.clear()
+                pad.addstr("%s: %s" % (name, value[:i]))
+                renderer()
+                time.sleep(CHARACTER_SHOW_DELAY_REGULAR)
+        else:
             pad.clear()
-            padd.addstr("%s: %s" % (name, value[:i]))
-            time.sleep(CHARACTER_SHOW_DELAY_REGULAR)
-
-    def print_info_unanimated(pad, name, value):
-        pad.clear()
-        pad.addstr("%s: %s" % (name, value))
+            padd.addstr("%s: %s" % (name, value))
+            renderer()
 
 
-    if immigrantInfo.occupation_discoverd:
-        print_info_animated(IMMIGRANT_INFO_OCCUPATION_PAD, "occupation", immigrantInfo.immigrant.occupation)
-    else:
-        print_info_unanimated(IMMIGRANT_INFO_OCCUPATION_PAD, "occupation", immigrantInfo.immigrant.occupation)
-
+    print_info_animated(IMMIGRANT_INFO_OCCUPATION_PAD, 
+            draw_immigrant_occupation_info_pad, 
+            "occupation", 
+            immigrantInfo.immigrant.occupation, 
+            animated=immigrantInfo.occpuation_newly_discovered)
 
 def print_officer(name, out):
     global INPUT_PAD
