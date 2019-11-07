@@ -584,7 +584,7 @@ def print_time():
     global TIMER
     global TIMER_PAD
     TIMER_PAD.clear()
-    TIMER_PAD.addstr("Tme left: %s" % TIMER.get_time_left_str())
+    TIMER_PAD.addstr("Time left: %s" % TIMER.get_time_left_str())
 
 def main(stdscr):
     global INPUT_PAD
@@ -652,6 +652,8 @@ def main(stdscr):
         
         # Allow for dialogue
         # ==================
+
+        immigration_choice = None
         for i in range(N_ROUNDS_PER_INTERVIEW):
             print_immigrant_info(immigrantInfo)
             immigrantInfo.reset_newly_discovered()
@@ -659,22 +661,30 @@ def main(stdscr):
             transcript = ""
             time.sleep(TIME_SHORT_PAUSE)
             i = read_input()
-            transcript += i + "\n"
 
-            # Print out output
-            r = immigrantInfo.get_response(i)
-            transcript += transcript + "\n"
-            print_immigrant(r)
-            # reset fields that we will animate for being newly discovered
-        TRANSCRIPTS.append(transcript)
+            # we got a string response (question). Get response to question
+            if i == IMMIGRATION_CHOICE_ENTER or i == IMMIGRATION_CHOICE_DEPORT or i == IMMIGRATION_CHOICE_DETAIN:
+                immigration_choice = i
+                break
+            else:
+                transcript += i + "\n"
 
-        # Provide options
-        # ===============
-        time.sleep(TIME_SHORT_PAUSE)
-        immigration_choice = read_immigration_choice()
-        time.sleep(TIME_SHORT_PAUSE)
+                # Print out output
+                r = immigrantInfo.get_response(i)
+                print_immigrant(r)
+                transcript += transcript + "\n"
+                # reset fields that we will animate for being newly discovered
+                TRANSCRIPTS.append(transcript)
+
+        # Provide options if the dialogue is complete
+        # ===========================================
+        if immigration_choice == None:
+            time.sleep(TIME_SHORT_PAUSE)
+            immigration_choice = read_immigration_choice()
 
         # Print what happens to them, update score
+        # =======================================
+        time.sleep(TIME_SHORT_PAUSE)
         print_immigration_feedback(generator, immigrant, immigration_choice)
         update_score(immigration_choice)
 
