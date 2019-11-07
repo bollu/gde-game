@@ -267,33 +267,33 @@ def render_png(png):
 
 def draw_input_pad():
     global INPUT_PAD
-    INPUT_PAD.refresh(0, 0, 1, 0, 1, 75)
     print_time()
     draw_timer_pad()
+    INPUT_PAD.refresh(0, 0, 1, 0, 1, 75)
 
 
 def draw_choices_pad():
     global CHOICES_PAD
-    CHOICES_PAD.refresh(0, 0, 0, 0, 0, 75)
     print_time()
     draw_timer_pad()
+    CHOICES_PAD.refresh(0, 0, 0, 0, 0, 75)
 
 
 def draw_immigration_pad():
     global IMMIGRATION_PAD
-    IMMIGRATION_PAD.refresh(0, 0, 2, 0, 2, 75)
     print_time()
     draw_timer_pad()
+    IMMIGRATION_PAD.refresh(0, 0, 2, 0, 2, 75)
 
 def draw_score_pad():
     global SCORE_PAD
+    print_time()
+    draw_timer_pad()
     SCORE_PAD.clear()
     SCORE_PAD.addstr("Allowed through: %s\t" %(SCORE.num_allowed, ))
     SCORE_PAD.addstr("Detained: %s\t" %(SCORE.num_detained, ))
     SCORE_PAD.addstr("Deported: %s" %(SCORE.num_deported, ))
     SCORE_PAD.refresh(0, 0, 3, 0, 3, 75)
-    print_time()
-    draw_timer_pad()
     # 32 x 32
 
 def draw_timer_pad():
@@ -306,14 +306,17 @@ def draw_immigrant_occupation_info_pad():
     global IMMIGRANT_INFO_OCCUPATION_PAD
     IMMIGRANT_INFO_OCCUPATION_PAD.refresh(0, 0, 5, 0, 5 + 1, 75)
 
-def print_officer_prompt(s):
+def print_officer_prompt(s, enabled):
     global INPUT_PAD
     global CHOICES_PAD
     global STDSCR
     INPUT_PAD.clear()
-    INPUT_PAD.addstr('officer: ')
+    if enabled:
+        INPUT_PAD.addstr('officer: ', curses.color_pair(PAIR_WHITE_ON_BLUE))
+    else:
+        INPUT_PAD.addstr('officer: ')
+    #     INPUT_PAD.addstr('officer: ')
     draw_input_pad()
-    # blob = TextBlob(s)
 
     words = s.split(' ')
     for i, w in enumerate(words):
@@ -321,8 +324,6 @@ def print_officer_prompt(s):
         if senti['neg'] >= 0.1: INPUT_PAD.addstr(w, curses.color_pair(PAIR_RED_ON_WHITE))
         elif senti['pos'] >= 0.1: INPUT_PAD.addstr(w, curses.color_pair(PAIR_GREEN_ON_WHITE))
         else: INPUT_PAD.addstr(w)
-        
-
         if i < len(words)-1: INPUT_PAD.addch(0, ord(' '))
         draw_input_pad()
 
@@ -348,30 +349,69 @@ def read_input():
     global INPUT_PAD
     global CHOICES_PAD
     global STDSCR
-    # stdscr.refresh()
+    global IMMIGRATION_PAD
+
+    MODE_TYPING = 0
+    MODE_CHOOSING_OPTION = MODE_TYPING + 1
+
+    def print_immigration_pad(enabled, ix):
+        IMMIGRATION_PAD.clear()
+        for i in range(len(choices)):
+            if ix == i and enabled:
+                IMMIGRATION_PAD.addstr("%s\t" % (choices[i], ), curses.color_pair(PAIR_WHITE_ON_BLUE))
+            else:
+                IMMIGRATION_PAD.addstr("%s\t" % (choices[i], ))
+            draw_immigration_pad()
+    choices = [IMMIGRATION_CHOICE_ENTER, IMMIGRATION_CHOICE_DEPORT, IMMIGRATION_CHOICE_DETAIN]
+
     s = ""
+    ix = 0 
+
+    mode = MODE_TYPING
+
     
     curses.flushinp()
     STDSCR.keypad(1)
+
     while True:
-        if s == "":
-            print_officer_prompt("(Type to respond)")
+        if mode == MODE_TYPING:
+            print_immigration_pad(mode == MODE_CHOOSING_OPTION, ix)
+            if s == "":
+                print_officer_prompt("(Type to respond)", enabled=True)
+            else:
+                print_officer_prompt(s, enabled=True)
         else:
-            print_officer_prompt(s)
+            print_immigration_pad(mode == MODE_CHOOSING_OPTION, ix)
+            print_officer_prompt(s, enabled=False)
 
         c = STDSCR.getch()
-        if c == curses.KEY_BACKSPACE:
-            s = s[:-1]
-        elif c == curses.KEY_ENTER or chr(c) == '\n':
-            if len(s) > 0:
+        if mode == MODE_TYPING:
+            if c == curses.KEY_BACKSPACE:
+                s = s[:-1]
+            elif c == curses.KEY_ENTER or chr(c) == '\n':
+                if len(s) > 0:
+                    break
+            elif curses.ascii.isalpha(chr(c)) or chr(c) == ' ' or chr(c) == '?' or chr(c) == '!':
+                s += chr(c)
+            elif c == curses.KEY_UP or c == curses.KEY_DOWN:
+                mode = MODE_CHOOSING_OPTION
+            else:
+                pass
+        elif mode == MODE_CHOOSING_OPTION:
+            if c == curses.KEY_RIGHT:
+                ix = (ix + 1) % len(choices)
+            if c == curses.KEY_LEFT:
+                ix = (ix - 1) % len(choices)
+            elif c == curses.KEY_UP or c == curses.KEY_DOWN:
+                mode = MODE_TYPING
+            if chr(c) == '\n':
                 break
-        else:
-            s += chr(c)
-        # stdscr.refresh()
-
 
     STDSCR.keypad(0)
-    return s
+    if mode == MODE_TYPING:
+        return s
+    elif mode == MODE_CHOOSING_OPTION: 
+        return choices[ix]
 
 
 
