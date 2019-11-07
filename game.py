@@ -223,7 +223,7 @@ class ImmigrantGenerator:
 class ImmigrantInfoDiscovered:
     def __init__(self, immigrant):
         self.immigrant = immigrant
-        self.occupation_discoverd = False
+        self.occupation_discovered = False
         self.backstory_discovered = False
         self.danger_discovered = False
         self.age_discovered = False
@@ -234,7 +234,7 @@ class ImmigrantInfoDiscovered:
     def get_response(self, r):
         for w in TextBlob(r).words:
             if w in set(["job", "occupation", "word", "livelihood"]):
-                self.occpuation_newly_discovered = False if self.occupation_discoverd else True
+                self.occupation_newly_discovered = False if self.occupation_discovered else True
                 self.occupation_discovered = True
                 return "I worked as a " + self.immigrant.occupation
         return "response"
@@ -411,15 +411,15 @@ def print_immigrant_info(immigrantInfo):
                 time.sleep(CHARACTER_SHOW_DELAY_REGULAR)
         else:
             pad.clear()
-            padd.addstr("%s: %s" % (name, value))
+            pad.addstr("%s: %s" % (name, value))
             renderer()
 
 
     print_info_animated(IMMIGRANT_INFO_OCCUPATION_PAD, 
             draw_immigrant_occupation_info_pad, 
             "occupation", 
-            immigrantInfo.immigrant.occupation, 
-            animated=immigrantInfo.occpuation_newly_discovered)
+            immigrantInfo.immigrant.occupation if immigrantInfo.occupation_discovered else "???", 
+            animated=immigrantInfo.occupation_newly_discovered)
 
 def print_officer(name, out):
     global INPUT_PAD
@@ -581,6 +581,9 @@ def main(stdscr):
         # Allow for dialogue
         # ==================
         for i in range(N_ROUNDS_PER_INTERVIEW):
+            print_immigrant_info(immigrantInfo)
+            immigrantInfo.reset_newly_discovered()
+
             transcript = ""
             time.sleep(TIME_SHORT_PAUSE)
             i = read_input()
@@ -590,9 +593,7 @@ def main(stdscr):
             r = immigrantInfo.get_response(i)
             transcript += transcript + "\n"
             print_immigrant(r)
-            print_immigrant_info(immigrantInfo)
             # reset fields that we will animate for being newly discovered
-            immigrantInfo.reset_newly_discovered()
         TRANSCRIPTS.append(transcript)
 
         # Provide options
