@@ -10,6 +10,7 @@ from textblob.sentiments import NaiveBayesAnalyzer
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer 
 import imageio
 import datetime
+from nltk.corpus import wordnet
 
 TRANSCRIPTS = []
 
@@ -43,7 +44,7 @@ IMMIGRATION_PAD = None
 SCORE_PAD = None
 VIEW_PAD = None
 TIMER_PAD = None
-IMMIGRANT_INFO_PAD=None
+IMMIGRANT_INFO_OCCUPATION_PAD=None
 
 class Score:
     def __init__(self):
@@ -167,6 +168,7 @@ class Immigrant:
         self.age = age
         self.backstory = backstory
         self.reason = reason
+        self.is_terrorist = False
 
 class ImmigrantGenerator:
     def __init__(self):
@@ -177,7 +179,8 @@ class ImmigrantGenerator:
         self.back = 0
         self.attack = 0
 
-    def new_immigrant(self):
+
+    def _new_low_education_immigrant(self):
         name = IMMIGRANT_NAMES[self.names % len(IMMIGRANT_NAMES)]
         self.names += 1
 
@@ -194,10 +197,47 @@ class ImmigrantGenerator:
 
         return Immigrant(name, occupation, education, age, backstory, reason)
 
+    def new_immigrant(self):
+        global SCORE
+        
+        # if we have never let a person through, force them to be a terrorist.
+        if (SCORE.num_allowed == 0):
+            i = self._new_low_education_immigrant()
+            i.is_terrorist = True
+            return i
+        else:
+            return self._new_low_education_immigrant()
+
+
     def gen_terrorist_attack(self):
         attack = TERROR_ATTACK[self.attack]
         self.attack += 1
         return attack
+
+
+# Class containing all the information that the responses have managed to uncover
+class ImmigrantInfoDiscovered:
+    def __init__(self, immigrant):
+        self.immigrant = immigrant
+        self.occupation_discoverd = False
+        self.backstory_discovered = False
+        self.danger_discovered = False
+        self.age_discovered = False
+        self.reason_discovered = False
+
+        self.occupation_newly_discovered = False
+
+    def get_response(self, r):
+        for w in TextBlob(r).words:
+            if w in set(["job", "occupation", "word", "livelihood"]):
+                self.occpuation_newly_discovered = False if self.occupation_discoverd else True
+                self.occupation_discovered = True
+                return "I worked as a " + self.immigrant.occupation
+        return "response"
+
+    def reset_newly_discovered(self):
+        self.occupation_newly_discovered = False
+
 
 
 
@@ -258,9 +298,9 @@ def draw_timer_pad():
 
 
 # 5 x 75
-def draw_immigrant_info_pad():
-    global IMMIGRANT_INFO_PAD
-    IMMIGRANT_INFO_PAD.refresh(0, 0, 5, 0, 5 + 15, 75)
+def draw_immigrant_occupation_info_pad():
+    global IMMIGRANT_INFO_OCCUPATION_PAD
+    IMMIGRANT_INFO_OCCUPATION_PAD.refresh(0, 0, 5, 0, 5 + 1, 75)
 
 def print_officer_prompt(s):
     global INPUT_PAD
@@ -329,8 +369,6 @@ def read_input():
     STDSCR.keypad(0)
     return s
 
-def compute_response(i):
-    return "response"
 
 
 def print_immigrant(r):
@@ -354,6 +392,27 @@ def print_immigrant(r):
         CHOICES_PAD.addstr("%s" %(s))
         draw_choices_pad()
         time.sleep(CHARACTER_SHOW_DELAY_REGULAR)
+
+
+def print_immigrant_info(immigrantInfo):
+    global IMMIGRANT_INFO_OCCUPATION_PAD
+    IMMIGRANT_INFO_OCCUPATION_PAD.clear()
+
+    def print_info_animated(pad, name, value):
+        for i in range(len(value)) + 1:
+            pad.clear()
+            padd.addstr("%s: %s" % (name, value[:i]))
+            time.sleep(CHARACTER_SHOW_DELAY_REGULAR)
+
+    def print_info_unanimated(pad, name, value):
+        pad.clear()
+        pad.addstr("%s: %s" % (name, value))
+
+
+    if immigrantInfo.occupation_discoverd:
+        print_info_animated(IMMIGRANT_INFO_OCCUPATION_PAD, "occupation", immigrantInfo.immigrant.occupation)
+    else:
+        print_info_unanimated(IMMIGRANT_INFO_OCCUPATION_PAD, "occupation", immigrantInfo.immigrant.occupation)
 
 
 def print_officer(name, out):
@@ -413,7 +472,7 @@ def print_immigration_feedback(generator, immigrant, choice):
     s = ""
     if choice == IMMIGRATION_CHOICE_ENTER:
         s = "%s was let through." % (immigrant.name, )
-        if SCORE.num_allowed == 0: s += " " + generator.gen_terrorist_attack()
+        if immigrant.is_terrorist: s += " " + generator.gen_terrorist_attack() + ". (%s citizens lost their lives today" % (random.randint(10, 200)) 
     elif choice == IMMIGRATION_CHOICE_DEPORT:
         s = "%s was deported." % (immigrant.name, )
     else: # only possible choice is 
@@ -464,7 +523,7 @@ def main(stdscr):
     global VIEW_PAD
     global TIMER_PAD
     global IMMIGRANT_NAMES
-    global IMMIGRANT_INFO_PAD
+    global IMMIGRANT_INFO_OCCUPATION_PAD
     global TRANSCRIPTS
 
 
@@ -475,7 +534,7 @@ def main(stdscr):
     SCORE_PAD = curses.newpad(1, 800)
     VIEW_PAD = curses.newpad(40, 400)
     TIMER_PAD = curses.newpad(1, 800)
-    IMMIGRANT_INFO_PAD = curses.newpad(15, 800)
+    IMMIGRANT_INFO_OCCUPATION_PAD = curses.newpad(1, 800)
 
     # disable input
     STDSCR.keypad(0)
@@ -498,6 +557,7 @@ def main(stdscr):
     
     for _ in range(N_TOTAL_INTERVIEWS):
         immigrant = generator.new_immigrant()
+        immigrantInfo = ImmigrantInfoDiscovered(immigrant)
 
         # ask for new immigrant
         CHOICES_PAD.clear()
@@ -521,9 +581,12 @@ def main(stdscr):
             transcript += i + "\n"
 
             # Print out output
-            r = compute_response(i)
+            r = immigrantInfo.get_response(i)
             transcript += transcript + "\n"
             print_immigrant(r)
+            print_immigrant_info(immigrantInfo)
+            # reset fields that we will animate for being newly discovered
+            immigrantInfo.reset_newly_discovered()
         TRANSCRIPTS.append(transcript)
 
         # Provide options
@@ -544,11 +607,11 @@ def main(stdscr):
     SCORE_PAD.clear()
     VIEW_PAD.clear()
     TIMER_PAD.clear()
-    IMMIGRANT_INFO_PAD.clear()
+    IMMIGRANT_INFO_OCCUPATION_PAD.clear()
     for transcript in TRANSCRIPTS:
-        IMMIGRANT_INFO_PAD.clear()
-        IMMIGRANT_INFO_PAD.addstr(transcript)
-        draw_immigrant_info_pad()
+        IMMIGRANT_INFO_OCCUPATION_PAD.clear()
+        IMMIGRANT_INFO_OCCUPATION_PAD.addstr(transcript)
+        draw_immigrant_occupation_info_pad()
 
 if __name__ == "__main__":
     wrapper(main)
