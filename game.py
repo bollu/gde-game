@@ -276,24 +276,24 @@ class ImmigrantInfoDiscovered:
         self.age_newly_discovered = False
         self.name_newly_discovered = False
 
-    def get_response(self, r, model):
-        for w in TextBlob(r).words:
-            r = ""
+    def get_response(self, in_sentence, sess):
+        r = ""
+        for w in TextBlob(in_sentence).words:
             if w in set(["job", "occupation", "word", "livelihood"]):
                 self.occupation_newly_discovered = False if self.occupation_discovered else True
                 self.occupation_discovered = True
-                r +=  "I worked as a " + self.immigrant.occupation
+                r =  "I worked as a " + self.immigrant.occupation
             elif w in set(["name"]):
                 self.name_newly_discovered = False if self.name_discovered else True
                 self.name_discovered = True
-                r += "My name is " + self.immigrant.name
+                r = "My name is " + self.immigrant.name
 
             elif w in set(["age"]):
                 self.age_newly_discovered = False if self.age_discovered else True
                 self.age_discovered = True
-                r += "My age is " + str(self.immigrant.age)
+                r = "My age is " + str(self.immigrant.age)
 
-        return r + ".\n" + sanitize_gpt2_output(model(r))
+        return r + ".\n" + sanitize_gpt2_output(interact_model(sess, in_sentence + "\n" +r))
 
     def reset_newly_discovered(self):
         self.occupation_newly_discovered = False
@@ -765,8 +765,6 @@ def main(stdscr):
     generator = ImmigrantGenerator()
     
     with tf.Session(graph=tf.Graph()) as sess:
-        MODEL = interact_model(sess)
-
         for _ in range(N_TOTAL_INTERVIEWS):
             immigrant = generator.new_immigrant()
             immigrantInfo = ImmigrantInfoDiscovered(immigrant)
@@ -806,7 +804,7 @@ def main(stdscr):
                     TRANSCRIPTS[-1] = TRANSCRIPTS[-1] +  i + "\n"
 
                     # Print out output
-                    r = immigrantInfo.get_response(i, MODEL)
+                    r = immigrantInfo.get_response(i, sess)
                     print_immigrant(r)
                     TRANSCRIPTS[-1] = TRANSCRIPTS[-1] +  r + "\n"
 
@@ -822,20 +820,20 @@ def main(stdscr):
             print_immigration_feedback(generator, immigrant, immigration_choice)
             update_score(immigration_choice)
 
-        # TODO: test this code
+    # TODO: test this code
 
-        for i, transcript in enumerate(TRANSCRIPTS):
-            STDSCR.clear()
-            STDSCR.refresh()
+    for i, transcript in enumerate(TRANSCRIPTS):
+        STDSCR.clear()
+        STDSCR.refresh()
 
-            header = "Interview %s:\n" % (i+1, )
-            transcript =  header + ('-' * len(header)) + "\n" + transcript
-            TRANSCRIPT_PAD.clear()
-            print_pad_string(TRANSCRIPT_PAD, transcript, color=True)
-            TRANSCRIPT_PAD.refresh(0, 0, 0, 0, 50, 75)
-            time.sleep(1)
-            curses.flushinp()
-            c = STDSCR.getch()
+        header = "Interview %s:\n" % (i+1, )
+        transcript =  header + ('-' * len(header)) + "\n" + transcript
+        TRANSCRIPT_PAD.clear()
+        print_pad_string(TRANSCRIPT_PAD, transcript, color=True)
+        TRANSCRIPT_PAD.refresh(0, 0, 0, 0, 50, 75)
+        time.sleep(1)
+        curses.flushinp()
+        c = STDSCR.getch()
 
 if __name__ == "__main__":
     wrapper(main)
