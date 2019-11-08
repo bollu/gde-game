@@ -316,12 +316,14 @@ def draw_choices_pad():
     CHOICES_PAD.refresh(0, 0, 0, 0, 0, 75)
 
 
+# 2 to 3
 def draw_immigration_pad():
     global IMMIGRATION_PAD
     print_time()
     draw_timer_pad()
     IMMIGRATION_PAD.refresh(0, 0, 2, 0, 3, 75)
 
+# move: 3 to 4
 def draw_score_pad():
     global SCORE_PAD
     print_time()
@@ -352,7 +354,36 @@ def draw_immigrant_occupation_info_pad():
     global IMMIGRANT_INFO_OCCUPATION_PAD
     IMMIGRANT_INFO_OCCUPATION_PAD.refresh(0, 0, 7, 0, 7 + 1, 75)
 
+def flatten(xss):
+    return [x for xs in xss for x in xs]
 
+def intercalate(lst, item):
+    result = [item] * (len(lst) * 2 - 1)
+    result[0::2] = lst
+    return result
+
+
+# print a string into a pad. NEVER use pad.addstr (For the most part...)
+def print_pad_string(pad, s, color=False):
+    words = s.split(' ')
+    words = [intercalate(w.split('\n'), '\n') for w in words]
+    words = flatten(words)
+
+    curlen = 0
+    for i, w in enumerate(words):
+        # add a newline
+        if curlen + len(w) + 1 > 60:
+            pad.addstr('\n')
+            curlen = len(w)
+        elif "\n" in w:
+            curlen = 0
+        else: curlen += len(w)
+
+        senti = sentimentAnalyzer.polarity_scores(w)
+        if color and senti['neg'] >= 0.1: pad.addstr(w, curses.color_pair(PAIR_RED_ON_WHITE))
+        elif color and senti['pos'] >= 0.1: pad.addstr(w, curses.color_pair(PAIR_GREEN_ON_WHITE))
+        else: pad.addstr(w)
+        if i < len(words)-1: pad.addch(0, ord(' '))
 
 def print_officer_prompt(s, enabled):
     global INPUT_PAD
@@ -624,7 +655,7 @@ def print_immigration_feedback(generator, immigrant, choice):
     s = ""
     if choice == IMMIGRATION_CHOICE_ENTER:
         s = "%s was let through." % (immigrant.name, )
-        if immigrant.is_terrorist: s += "\n" + generator.gen_terrorist_attack() + ". (%s citizens lost their lives today" % (random.randint(10, 200)) 
+        if immigrant.is_terrorist: s += "\n" + generator.gen_terrorist_attack() + ".\n(%s citizens lost their lives today" % (random.randint(10, 200)) 
     elif choice == IMMIGRATION_CHOICE_DEPORT:
         s = "%s was deported." % (immigrant.name, )
     else: # only possible choice is 
@@ -765,15 +796,15 @@ def main(stdscr):
         update_score(immigration_choice)
 
     # TODO: test this code
-    STDSCR.clear()
-    STDSCR.refresh()
 
     for i, transcript in enumerate(TRANSCRIPTS):
+        STDSCR.clear()
+        STDSCR.refresh()
 
         header = "Interview %s:\n" % (i+1, )
         transcript =  header + ('-' * len(header)) + "\n" + transcript
         TRANSCRIPT_PAD.clear()
-        TRANSCRIPT_PAD.addstr(transcript)
+        print_pad_string(TRANSCRIPT_PAD, transcript, color=True)
         TRANSCRIPT_PAD.refresh(0, 0, 0, 0, 50, 75)
         time.sleep(1)
         curses.flushinp()
