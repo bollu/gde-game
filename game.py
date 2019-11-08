@@ -24,11 +24,21 @@ TRANSCRIPTS = []
 TIME_SHORT_PAUSE=0.3
 CHARACTER_SHOW_DELAY_REGULAR=0.05
 
+# ============
+# DEBUG
 TIME_SHORT_PAUSE=0
 CHARACTER_SHOW_DELAY_REGULAR=0
+# ==================
 
 N_TOTAL_INTERVIEWS = 5
 N_ROUNDS_PER_INTERVIEW = 3
+
+
+# ============
+# DEBUG
+N_TOTAL_INTERVIEWS = 1
+N_ROUNDS_PER_INTERVIEW = 3
+# ============
 
 BLOCKCHAR = "█"
 BOTTOMHALFBLOCKCHAR="▄"
@@ -607,6 +617,7 @@ def print_immigration_feedback(generator, immigrant, choice):
     global IMMIGRATION_PAD
     global STDSCR
     global SCORE
+    global TRANSCRIPTS
 
     IMMIGRATION_PAD.clear()
 
@@ -620,6 +631,7 @@ def print_immigration_feedback(generator, immigrant, choice):
         assert_in_game(choice == IMMIGRATION_CHOICE_DETAIN)
         s = "%s was detained." % (immigrant.name, )
 
+    TRANSCRIPTS[-1] = TRANSCRIPTS[-1] +  s + "\n"
 
     CHOICES_PAD.clear()
     INPUT_PAD.clear()
@@ -640,7 +652,7 @@ def update_score(choice):
     elif choice == IMMIGRATION_CHOICE_DETAIN:
         SCORE.num_detained += 1
         
-    draw_score_pad()
+    # draw_score_pad()
     pass
 
 
@@ -679,6 +691,7 @@ def main(stdscr):
     IMMIGRANT_INFO_NAME_PAD = curses.newpad(1, 800)
     IMMIGRANT_INFO_AGE_PAD = curses.newpad(1, 800)
     IMMIGRANT_INFO_COUNTRY_PAD = curses.newpad(1, 800)
+    TRANSCRIPT_PAD = curses.newpad(10, 800)
 
     # disable input
     STDSCR.keypad(0)
@@ -719,6 +732,7 @@ def main(stdscr):
 
         immigration_choice = None
         for i in range(N_ROUNDS_PER_INTERVIEW):
+            TRANSCRIPTS.append("")
             print_immigrant_info(immigrantInfo)
             immigrantInfo.reset_newly_discovered()
 
@@ -731,14 +745,12 @@ def main(stdscr):
                 immigration_choice = i
                 break
             else:
-                transcript += i + "\n"
+                TRANSCRIPTS[-1] = TRANSCRIPTS[-1] +  i + "\n"
 
                 # Print out output
                 r = immigrantInfo.get_response(i)
                 print_immigrant(r)
-                transcript += transcript + "\n"
-                # reset fields that we will animate for being newly discovered
-                TRANSCRIPTS.append(transcript)
+                TRANSCRIPTS[-1] = TRANSCRIPTS[-1] +  r + "\n"
 
         # Provide options if the dialogue is complete
         # ===========================================
@@ -753,17 +765,19 @@ def main(stdscr):
         update_score(immigration_choice)
 
     # TODO: test this code
-    INPUT_PAD.clear()
-    CHOICES_PAD.clear()
     STDSCR.clear()
-    IMMIGRATION_PAD.clear()
-    SCORE_PAD.clear()
-    VIEW_PAD.clear()
-    TIMER_PAD.clear()
-    # IMMIGRANT_INFO_OCCUPATION_PAD.clear()
-    # for transcript in TRANSCRIPTS:
-    #     IMMIGRANT_INFO_OCCUPATION_PAD.clear()
-    #     IMMIGRANT_INFO_OCCUPATION_PAD.addstr(transcript)
+    STDSCR.refresh()
+
+    for i, transcript in enumerate(TRANSCRIPTS):
+
+        header = "Interview %s:\n" % (i+1, )
+        transcript =  header + ('-' * len(header)) + "\n" + transcript
+        TRANSCRIPT_PAD.clear()
+        TRANSCRIPT_PAD.addstr(transcript)
+        TRANSCRIPT_PAD.refresh(0, 0, 0, 0, 50, 75)
+        time.sleep(1)
+        curses.flushinp()
+        c = STDSCR.getch()
 
 if __name__ == "__main__":
     wrapper(main)
