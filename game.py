@@ -12,11 +12,27 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import imageio
 import datetime
 from nltk.corpus import wordnet
+import os
+import json
 
 
 import gpt2
 from gpt2.src.generate_seeded_sample import interact_model
+from gpt2.src.generate_seeded_sample import *
 import tensorflow as tf
+import numpy as np
+
+### COPY PASTE FROM GPT2
+model_name='117M'
+seed=1
+nsamples=1
+batch_size=1
+length=40
+temperature=0.5
+top_k=5
+top_p=1
+models_dir='/home/bollu/gde/gpt2/models'
+### END COPY PASTE
 
 # no surprises, please
 random.seed(0)
@@ -276,7 +292,7 @@ class ImmigrantInfoDiscovered:
         self.age_newly_discovered = False
         self.name_newly_discovered = False
 
-    def get_response(self, in_sentence, sess):
+    def get_response(self, in_sentence, sess, context, enc, output):
         r = ""
         for w in TextBlob(in_sentence).words:
             if w in set(["job", "occupation", "word", "livelihood"]):
@@ -293,7 +309,23 @@ class ImmigrantInfoDiscovered:
                 self.age_discovered = True
                 r = "My age is " + str(self.immigrant.age)
 
-        return r + ".\n" + sanitize_gpt2_output(interact_model(sess, in_sentence + "\n" +r))
+
+        # COPY PASTED FROM GPT-2=========================
+        context_tokens = enc.encode(in_sentence + "." + r)
+        generated = 0
+        text = ""
+        for _ in range(nsamples // batch_size):
+            out = sess.run(output, feed_dict={
+                context: [context_tokens for _ in range(batch_size)]
+            })[:, len(context_tokens):]
+            for i in range(batch_size):
+                generated += 1
+                text = enc.decode(out[i])
+                break
+            break
+        # END COPY PASTE
+
+        return r + " " + sanitize_gpt2_output(text)
 
     def reset_newly_discovered(self):
         self.occupation_newly_discovered = False
@@ -763,8 +795,44 @@ def main(stdscr):
 
 
     generator = ImmigrantGenerator()
+
+    #### COPY PASTE GPT 2===========
+    global models_dir
+    global batch_size
+    global length
+    models_dir = os.path.expanduser(os.path.expandvars(models_dir))
+    if batch_size is None:
+        batch_size = 1
+    assert nsamples % batch_size == 0
+
+    enc = get_encoder(model_name, models_dir)
+    hparams = default_hparams()
+    with open(os.path.join(models_dir, model_name, 'hparams.json')) as f:
+        hparams.override_from_dict(json.load(f))
+
+    if length is None:
+        length = hparams.n_ctx // 2
+    elif length > hparams.n_ctx:
+        raise ValueError("Can't get samples longer than window size: %s" % hparams.n_ctx)
+    #### END COPY PASTE=============
     
     with tf.Session(graph=tf.Graph()) as sess:
+        #### COPY PASTE GPT2=================
+        context = tf.placeholder(tf.int32, [batch_size, None])
+        np.random.seed(seed)
+        tf.set_random_seed(seed)
+        output = sample_sequence(
+            hparams=hparams, length=length,
+            context=context,
+            batch_size=batch_size,
+            temperature=temperature, top_k=top_k, top_p=top_p
+        )
+
+        saver = tf.train.Saver()
+        ckpt = tf.train.latest_checkpoint(os.path.join(models_dir, model_name))
+        saver.restore(sess, ckpt)
+        # END COPY PASTE GPT2====================
+
         for _ in range(N_TOTAL_INTERVIEWS):
             immigrant = generator.new_immigrant()
             immigrantInfo = ImmigrantInfoDiscovered(immigrant)
@@ -804,7 +872,7 @@ def main(stdscr):
                     TRANSCRIPTS[-1] = TRANSCRIPTS[-1] +  i + "\n"
 
                     # Print out output
-                    r = immigrantInfo.get_response(i, sess)
+                    r = immigrantInfo.get_response(i, sess, context, enc, output)
                     print_immigrant(r)
                     TRANSCRIPTS[-1] = TRANSCRIPTS[-1] +  r + "\n"
 
