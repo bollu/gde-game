@@ -4,6 +4,7 @@ from curses import wrapper
 from curses.textpad import Textbox, rectangle
 from curses import ascii
 import time
+import copy
 import random
 from textblob import TextBlob
 from textblob.sentiments import NaiveBayesAnalyzer
@@ -12,15 +13,19 @@ import imageio
 import datetime
 from nltk.corpus import wordnet
 
-DEBUG_USE_OTHER_LANGUAGE_PRINTING=False
-DETRANSCRIPTS = []
+# no surprises, please
+random.seed(0)
 
-# TIME_SHORT_PAUSE=0.3
-# CHARACTER_SHOW_DELAY_REGULAR=0.04
+DEBUG_USE_OTHER_LANGUAGE_PRINTING=False
+TRANSCRIPTS = []
+
 
 
 TIME_SHORT_PAUSE=0.3
 CHARACTER_SHOW_DELAY_REGULAR=0.05
+
+TIME_SHORT_PAUSE=0
+CHARACTER_SHOW_DELAY_REGULAR=0
 
 N_TOTAL_INTERVIEWS = 5
 N_ROUNDS_PER_INTERVIEW = 3
@@ -28,10 +33,6 @@ N_ROUNDS_PER_INTERVIEW = 3
 BLOCKCHAR = "█"
 BOTTOMHALFBLOCKCHAR="▄"
 TOPHALFBLOCKCHAR="▄"
-
-
-sprite = imageio.imread('sprite.png')
-print(sprite.shape)
 
 
 
@@ -157,6 +158,23 @@ TERROR_ATTACK[TERROR_ATTACK_RELIGIOUS_SHOOTING] = "They were responsible for a r
 TERROR_ATTACK[TERROR_ATTACK_SUICIDE_BOMB] = "They are responsible for a suicide bombing."
 TERROR_ATTACK[TERROR_ATTACK_POISON_WATER] = "They have poisoned the city water."
 
+
+class RandomChooser:
+    def __init__(self, vals):
+        assert(isinstance(vals, list))
+        self.vals = list(vals)
+        self.not_used = copy.deepcopy(self.vals)
+
+    def get_random_choice(self):
+        if len(self.not_used) == 0:
+            self.not_used = copy.deepcopy(self.vals)
+
+        c = random.choice(self.not_used)
+        # remove choice
+        self.not_used = [v for v in self.not_used if v != c]
+        return c
+
+
 def load_immigrant_names():
     with open("immigrant_names.txt", "r") as f:
         names = [name.split("\n")[0] for name in f.readlines()]
@@ -177,27 +195,21 @@ class Immigrant:
 
 class ImmigrantGenerator:
     def __init__(self):
-        self.names = 0
-        self.occu = 0
-        self.edu = 0
-        self.attack = 0
-        self.back = 0
-        self.attack = 0
+        self.name_chooser = RandomChooser(IMMIGRANT_NAMES)
+        self.occu_chooser = RandomChooser(list(LOW_EDU_OCCUPATIONS.values()))
+        self.backstory_chooser = RandomChooser(list(BACKSTORY.values()))
+        self.attack_chooser = RandomChooser(list(TERROR_ATTACK.values()))
 
 
     def _new_low_education_immigrant(self):
-        name = IMMIGRANT_NAMES[self.names % len(IMMIGRANT_NAMES)]
-        self.names += 1
+        name = self.name_chooser.get_random_choice()
 
         # low education occupations
-        occupation = LOW_EDU_OCCUPATIONS[(self.occu + 1) % len(LOW_EDU_OCCUPATIONS)]
-        self.occu += 1
+        occupation = self.occu_chooser.get_random_choice()
         education =  \
-            EDUCATIONS[EDUCATION_UNKNOWN if random.randint(0, 1) == 0 else EDUCATION_PRIMARY_SCHOOL]
+                "unknown" if random.randint(0, 1) == 0 else "primary school"
         age = random.randint(20, 30)
-        backstory = BACKSTORY[self.back % len(BACKSTORY)]
-        self.back += 1
-
+        backstory = self.backstory_chooser.get_random_choice()
         reason = REASON_FOR_IMMIGRATION[REASON_FOR_IMMIGRATION_DANGER]
 
         return Immigrant(name, occupation, education, age, backstory, reason)
@@ -215,8 +227,7 @@ class ImmigrantGenerator:
 
 
     def gen_terrorist_attack(self):
-        attack = TERROR_ATTACK[self.attack]
-        self.attack += 1
+        attack = self.attack_chooser.get_random_choice()
         return attack
 
 
@@ -269,6 +280,7 @@ def render_png(png):
             VIEW_PAD.addch(j, i, c)
 
 
+# y: 1 to 3
 def draw_input_pad():
     global INPUT_PAD
     print_time()
@@ -287,7 +299,7 @@ def draw_immigration_pad():
     global IMMIGRATION_PAD
     print_time()
     draw_timer_pad()
-    IMMIGRATION_PAD.refresh(0, 0, 2, 0, 2, 75)
+    IMMIGRATION_PAD.refresh(0, 0, 2, 0, 3, 75)
 
 def draw_score_pad():
     global SCORE_PAD
@@ -589,7 +601,7 @@ def print_immigration_feedback(generator, immigrant, choice):
     s = ""
     if choice == IMMIGRATION_CHOICE_ENTER:
         s = "%s was let through." % (immigrant.name, )
-        if immigrant.is_terrorist: s += " " + generator.gen_terrorist_attack() + ". (%s citizens lost their lives today" % (random.randint(10, 200)) 
+        if immigrant.is_terrorist: s += "\n" + generator.gen_terrorist_attack() + ". (%s citizens lost their lives today" % (random.randint(10, 200)) 
     elif choice == IMMIGRATION_CHOICE_DEPORT:
         s = "%s was deported." % (immigrant.name, )
     else: # only possible choice is 
@@ -647,7 +659,7 @@ def main(stdscr):
     STDSCR = stdscr
     INPUT_PAD = curses.newpad(1, 800)
     CHOICES_PAD = curses.newpad(1, 800)
-    IMMIGRATION_PAD = curses.newpad(1, 800)
+    IMMIGRATION_PAD = curses.newpad(2, 800)
     SCORE_PAD = curses.newpad(1, 800)
     VIEW_PAD = curses.newpad(40, 400)
     TIMER_PAD = curses.newpad(1, 800)
@@ -669,9 +681,6 @@ def main(stdscr):
     STDSCR.clear()
     STDSCR.refresh()
 
-
-    render_png(sprite)
-    VIEW_PAD.refresh(0, 0, 4, 0, 4 + 32, 32)
 
     generator = ImmigrantGenerator()
     
