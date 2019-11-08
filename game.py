@@ -295,7 +295,7 @@ class ImmigrantInfoDiscovered:
     def get_response(self, in_sentence, sess, context, enc, output):
         r = ""
         for w in TextBlob(in_sentence).words:
-            if w in set(["job", "occupation", "word", "livelihood"]):
+            if w in set(["job", "occupation", "work", "livelihood"]):
                 self.occupation_newly_discovered = False if self.occupation_discovered else True
                 self.occupation_discovered = True
                 r =  "I worked as a " + self.immigrant.occupation
@@ -769,7 +769,7 @@ def main(stdscr):
 
     STDSCR = stdscr
     INPUT_PAD = curses.newpad(1, 800)
-    IMMIGRANT_SAY_PAD = curses.newpad(5, 800)
+    IMMIGRANT_SAY_PAD = curses.newpad(80, 800)
     PLAYER_OPTIONS_PAD = curses.newpad(5, 800)
     SCORE_PAD = curses.newpad(1, 800)
     VIEW_PAD = curses.newpad(40, 400)
