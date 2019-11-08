@@ -54,9 +54,9 @@ PAIR_GREEN_ON_WHITE = 2
 PAIR_WHITE_ON_BLUE = 3 # selection
 
 INPUT_PAD = None
-CHOICES_PAD = None
+IMMIGRANT_SAY_PAD = None
 STDSCR = None
-IMMIGRATION_PAD = None
+PLAYER_OPTIONS_PAD = None
 SCORE_PAD = None
 VIEW_PAD = None
 TIMER_PAD = None
@@ -301,28 +301,29 @@ def render_png(png):
             VIEW_PAD.addch(j, i, c)
 
 
-# y: 1 to 1
+# y: 35 to 37
 def draw_input_pad():
     global INPUT_PAD
     print_time()
     draw_timer_pad()
-    INPUT_PAD.refresh(0, 0, 1, 0, 1, 75)
+    INPUT_PAD.refresh(0, 0, 35, 0, 37, 75)
+
+# 34 to 34
+def draw_player_options_pad():
+    global PLAYER_OPTIONS_PAD
+    print_time()
+    draw_timer_pad()
+    PLAYER_OPTIONS_PAD.refresh(0, 0, 34, 0, 34, 75)
 
 
 # 0 to 0
-def draw_choices_pad():
-    global CHOICES_PAD
+def draw_immigrant_say_pad():
+    global IMMIGRANT_SAY_PAD
     print_time()
     draw_timer_pad()
-    CHOICES_PAD.refresh(0, 0, 0, 0, 0, 75)
+    IMMIGRANT_SAY_PAD.refresh(0, 0, 0, 0, 0, 75)
 
 
-# 2 to 5
-def draw_immigration_pad():
-    global IMMIGRATION_PAD
-    print_time()
-    draw_timer_pad()
-    IMMIGRATION_PAD.refresh(0, 0, 2, 0, 5, 75)
 
 # move: 5 to 5
 def draw_score_pad():
@@ -390,7 +391,7 @@ def print_pad_string(pad, s, color=False):
 
 def print_officer_prompt(s, enabled):
     global INPUT_PAD
-    global CHOICES_PAD
+    global IMMIGRANT_SAY_PAD
     global STDSCR
     INPUT_PAD.clear()
     if enabled:
@@ -413,7 +414,7 @@ def print_officer_prompt(s, enabled):
 def assert_in_game(b):
     if b: return
     INPUT_PAD.clear()
-    CHOICES_PAD.clear()
+    IMMIGRANT_SAY_PAD.clear()
     SCORE_PAD.clear()
 
     s = "The immigration center was bombed. There were no survivors"
@@ -429,21 +430,21 @@ def assert_in_game(b):
 
 def read_input():
     global INPUT_PAD
-    global CHOICES_PAD
+    global IMMIGRANT_SAY_PAD
     global STDSCR
-    global IMMIGRATION_PAD
+    global PLAYER_OPTIONS_PAD
 
     MODE_TYPING = 0
     MODE_CHOOSING_OPTION = MODE_TYPING + 1
 
     def print_immigration_pad(enabled, ix):
-        IMMIGRATION_PAD.clear()
+        PLAYER_OPTIONS_PAD.clear()
         for i in range(len(choices)):
             if ix == i and enabled:
-                IMMIGRATION_PAD.addstr("%s\t" % (choices[i], ), curses.color_pair(PAIR_WHITE_ON_BLUE))
+                PLAYER_OPTIONS_PAD.addstr("%s\t" % (choices[i], ), curses.color_pair(PAIR_WHITE_ON_BLUE))
             else:
-                IMMIGRATION_PAD.addstr("%s\t" % (choices[i], ))
-            draw_immigration_pad()
+                PLAYER_OPTIONS_PAD.addstr("%s\t" % (choices[i], ))
+            draw_player_options_pad()
     choices = [IMMIGRATION_CHOICE_ENTER, IMMIGRATION_CHOICE_DEPORT, IMMIGRATION_CHOICE_DETAIN]
 
     s = ""
@@ -473,7 +474,7 @@ def read_input():
             elif c == curses.KEY_ENTER or chr(c) == '\n':
                 if len(s) > 0:
                     break
-            elif curses.ascii.isalpha(chr(c)) or chr(c) == ' ' or chr(c) == '?' or chr(c) == '!':
+            elif (curses.ascii.isalpha(chr(c)) or chr(c) == ' ' or chr(c) == '?' or chr(c) == '!') and len(s) < 50:
                 s += chr(c)
             elif c == curses.KEY_UP or c == curses.KEY_DOWN:
                 mode = MODE_CHOOSING_OPTION
@@ -538,7 +539,7 @@ def transliterate_arabic(arabic):
 
 def print_immigrant(r):
     global INPUT_PAD
-    global CHOICES_PAD
+    global IMMIGRANT_SAY_PAD
     global STDSCR
 
     if DEBUG_USE_OTHER_LANGUAGE_PRINTING:
@@ -548,17 +549,17 @@ def print_immigrant(r):
 
     for i in range(len(r)+1):
         s = rencoded[:i]
-        CHOICES_PAD.clear()
-        CHOICES_PAD.addstr("%s" %(s,))
-        draw_choices_pad()
+        IMMIGRANT_SAY_PAD.clear()
+        IMMIGRANT_SAY_PAD.addstr("%s" %(s,))
+        draw_immigrant_say_pad()
         time.sleep(CHARACTER_SHOW_DELAY_REGULAR)
 
 
     for i in range(len(r)+1):
         s = r[:i] + str(rencoded[i:])
-        CHOICES_PAD.clear()
-        CHOICES_PAD.addstr("%s" %(s))
-        draw_choices_pad()
+        IMMIGRANT_SAY_PAD.clear()
+        IMMIGRANT_SAY_PAD.addstr("%s" %(s))
+        draw_immigrant_say_pad()
         time.sleep(CHARACTER_SHOW_DELAY_REGULAR)
 
 
@@ -619,7 +620,7 @@ IMMIGRATION_CHOICE_DETAIN = 'DETAIN FOR QUESTIONING'
 
 def read_immigration_choice():
     """Read the input of the immigration status that we want to provide them"""
-    global IMMIGRATION_PAD
+    global PLAYER_OPTIONS_PAD
     global STDSCR
     choices = [IMMIGRATION_CHOICE_ENTER, IMMIGRATION_CHOICE_DEPORT, IMMIGRATION_CHOICE_DETAIN]
     ix = 0 
@@ -627,13 +628,13 @@ def read_immigration_choice():
     curses.flushinp()
     STDSCR.keypad(1)
     while True:
-        IMMIGRATION_PAD.clear()
+        PLAYER_OPTIONS_PAD.clear()
         for i in range(len(choices)):
             if ix == i:
-                IMMIGRATION_PAD.addstr("%s\t" % (choices[i], ), curses.color_pair(PAIR_WHITE_ON_BLUE))
+                PLAYER_OPTIONS_PAD.addstr("%s\t" % (choices[i], ), curses.color_pair(PAIR_WHITE_ON_BLUE))
             else:
-                IMMIGRATION_PAD.addstr("%s\t" % (choices[i], ))
-            draw_immigration_pad()
+                PLAYER_OPTIONS_PAD.addstr("%s\t" % (choices[i], ))
+            draw_player_options_pad()
 
         c = STDSCR.getch()
         if c == curses.KEY_RIGHT:
@@ -648,12 +649,12 @@ def read_immigration_choice():
 
 
 def print_immigration_feedback(generator, immigrant, choice):
-    global IMMIGRATION_PAD
+    global PLAYER_OPTIONS_PAD
     global STDSCR
     global SCORE
     global TRANSCRIPTS
 
-    IMMIGRATION_PAD.clear()
+    PLAYER_OPTIONS_PAD.clear()
 
     s = ""
     if choice == IMMIGRATION_CHOICE_ENTER:
@@ -667,12 +668,12 @@ def print_immigration_feedback(generator, immigrant, choice):
 
     TRANSCRIPTS[-1] = TRANSCRIPTS[-1] +  s + "\n"
 
-    CHOICES_PAD.clear()
+    IMMIGRANT_SAY_PAD.clear()
     INPUT_PAD.clear()
     for i in range(len(s) + 1):
-        IMMIGRATION_PAD.clear()
-        IMMIGRATION_PAD.addstr(s[:i])
-        draw_immigration_pad()
+        PLAYER_OPTIONS_PAD.clear()
+        PLAYER_OPTIONS_PAD.addstr(s[:i])
+        draw_player_options_pad()
         time.sleep(CHARACTER_SHOW_DELAY_REGULAR)
     time.sleep(1)
     STDSCR.getch()
@@ -701,9 +702,9 @@ def print_time():
 
 def main(stdscr):
     global INPUT_PAD
-    global CHOICES_PAD
+    global IMMIGRANT_SAY_PAD
     global STDSCR
-    global IMMIGRATION_PAD
+    global PLAYER_OPTIONS_PAD
     global SCORE_PAD
     global VIEW_PAD
     global TIMER_PAD
@@ -716,8 +717,8 @@ def main(stdscr):
 
     STDSCR = stdscr
     INPUT_PAD = curses.newpad(1, 800)
-    CHOICES_PAD = curses.newpad(1, 800)
-    IMMIGRATION_PAD = curses.newpad(5, 800)
+    IMMIGRANT_SAY_PAD = curses.newpad(1, 800)
+    PLAYER_OPTIONS_PAD = curses.newpad(5, 800)
     SCORE_PAD = curses.newpad(1, 800)
     VIEW_PAD = curses.newpad(40, 400)
     TIMER_PAD = curses.newpad(1, 800)
@@ -748,10 +749,10 @@ def main(stdscr):
         immigrantInfo = ImmigrantInfoDiscovered(immigrant)
 
         # ask for new immigrant
-        CHOICES_PAD.clear()
-        IMMIGRATION_PAD.clear()
-        draw_immigration_pad()
-        draw_choices_pad()
+        IMMIGRANT_SAY_PAD.clear()
+        PLAYER_OPTIONS_PAD.clear()
+        draw_player_options_pad()
+        draw_immigrant_say_pad()
 
         print_officer("officer", "next, please!")
         time.sleep(TIME_SHORT_PAUSE)
@@ -759,7 +760,7 @@ def main(stdscr):
         # Have immigrant say hello
         print_immigrant("Good morning, officer")
 
-        # draw_immigration_pad()
+        # draw_player_options_pad()
         
         # Allow for dialogue
         # ==================
