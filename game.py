@@ -301,7 +301,7 @@ def render_png(png):
             VIEW_PAD.addch(j, i, c)
 
 
-# y: 1 to 3
+# y: 1 to 1
 def draw_input_pad():
     global INPUT_PAD
     print_time()
@@ -309,6 +309,7 @@ def draw_input_pad():
     INPUT_PAD.refresh(0, 0, 1, 0, 1, 75)
 
 
+# 0 to 0
 def draw_choices_pad():
     global CHOICES_PAD
     print_time()
@@ -316,14 +317,14 @@ def draw_choices_pad():
     CHOICES_PAD.refresh(0, 0, 0, 0, 0, 75)
 
 
-# 2 to 3
+# 2 to 5
 def draw_immigration_pad():
     global IMMIGRATION_PAD
     print_time()
     draw_timer_pad()
-    IMMIGRATION_PAD.refresh(0, 0, 2, 0, 3, 75)
+    IMMIGRATION_PAD.refresh(0, 0, 2, 0, 5, 75)
 
-# move: 3 to 4
+# move: 5 to 5
 def draw_score_pad():
     global SCORE_PAD
     print_time()
@@ -332,27 +333,29 @@ def draw_score_pad():
     SCORE_PAD.addstr("Allowed through: %s\t" %(SCORE.num_allowed, ))
     SCORE_PAD.addstr("Detained: %s\t" %(SCORE.num_detained, ))
     SCORE_PAD.addstr("Deported: %s" %(SCORE.num_deported, ))
-    SCORE_PAD.refresh(0, 0, 3, 0, 3, 75)
+    SCORE_PAD.refresh(0, 0, 5, 0, 5, 75)
     # 32 x 32
 
+# 6 to 6
 def draw_timer_pad():
     global TIMER_PAD
-    TIMER_PAD.refresh(0, 0, 4, 0, 4, 75)
+    TIMER_PAD.refresh(0, 0, 6, 0, 6, 75)
 
 # (name, age, occupation)
 
-# 5 
+# 7 to 7
 def draw_immigrant_name_info_pad():
     global IMMIGRANT_INFO_NAME_PAD
-    IMMIGRANT_INFO_NAME_PAD.refresh(0, 0, 5, 0, 5 + 1, 75)
+    IMMIGRANT_INFO_NAME_PAD.refresh(0, 0, 7, 0, 7, 75)
 
+# 8 to 8
 def draw_immigrant_age_info_pad():
     global IMMIGRANT_INFO_AGE_PAD
-    IMMIGRANT_INFO_AGE_PAD.refresh(0, 0, 6, 0, 6+ 1, 75)
-# 6
+    IMMIGRANT_INFO_AGE_PAD.refresh(0, 0, 8, 0, 8, 75)
+# 9 to 9
 def draw_immigrant_occupation_info_pad():
     global IMMIGRANT_INFO_OCCUPATION_PAD
-    IMMIGRANT_INFO_OCCUPATION_PAD.refresh(0, 0, 7, 0, 7 + 1, 75)
+    IMMIGRANT_INFO_OCCUPATION_PAD.refresh(0, 0, 9, 0, 9, 75)
 
 def flatten(xss):
     return [x for xs in xss for x in xs]
@@ -714,7 +717,7 @@ def main(stdscr):
     STDSCR = stdscr
     INPUT_PAD = curses.newpad(1, 800)
     CHOICES_PAD = curses.newpad(1, 800)
-    IMMIGRATION_PAD = curses.newpad(2, 800)
+    IMMIGRATION_PAD = curses.newpad(5, 800)
     SCORE_PAD = curses.newpad(1, 800)
     VIEW_PAD = curses.newpad(40, 400)
     TIMER_PAD = curses.newpad(1, 800)
