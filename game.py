@@ -26,8 +26,8 @@ CHARACTER_SHOW_DELAY_REGULAR=0.05
 
 # ============
 # DEBUG
-TIME_SHORT_PAUSE=0
-CHARACTER_SHOW_DELAY_REGULAR=0
+# TIME_SHORT_PAUSE=0
+# CHARACTER_SHOW_DELAY_REGULAR=0
 # ==================
 
 N_TOTAL_INTERVIEWS = 5
@@ -659,7 +659,7 @@ def print_immigration_feedback(generator, immigrant, choice):
     s = ""
     if choice == IMMIGRATION_CHOICE_ENTER:
         s = "%s was let through." % (immigrant.name, )
-        if immigrant.is_terrorist: s += "\n" + generator.gen_terrorist_attack() + ".\n(%s citizens lost their lives today" % (random.randint(10, 200)) 
+        if immigrant.is_terrorist: s += "\n" + generator.gen_terrorist_attack() + ".\n(%s citizens lost their lives today)" % (random.randint(10, 200)) 
     elif choice == IMMIGRATION_CHOICE_DEPORT:
         s = "%s was deported." % (immigrant.name, )
     else: # only possible choice is 
@@ -671,9 +671,9 @@ def print_immigration_feedback(generator, immigrant, choice):
     IMMIGRANT_SAY_PAD.clear()
     INPUT_PAD.clear()
     for i in range(len(s) + 1):
-        PLAYER_OPTIONS_PAD.clear()
-        PLAYER_OPTIONS_PAD.addstr(s[:i])
-        draw_player_options_pad()
+        IMMIGRANT_SAY_PAD.clear()
+        IMMIGRANT_SAY_PAD.addstr(s[:i])
+        draw_immigrant_say_pad()
         time.sleep(CHARACTER_SHOW_DELAY_REGULAR)
     time.sleep(1)
     STDSCR.getch()
