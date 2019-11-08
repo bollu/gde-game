@@ -316,13 +316,13 @@ def draw_player_options_pad():
     PLAYER_OPTIONS_PAD.refresh(0, 0, 34, 0, 34, 75)
 
 
-# 0 to 0
+
+# 15 to 20
 def draw_immigrant_say_pad():
     global IMMIGRANT_SAY_PAD
     print_time()
     draw_timer_pad()
-    IMMIGRANT_SAY_PAD.refresh(0, 0, 0, 0, 0, 75)
-
+    IMMIGRANT_SAY_PAD.refresh(0, 0, 15, 0, 20, 75)
 
 
 # move: 5 to 5
@@ -717,7 +717,7 @@ def main(stdscr):
 
     STDSCR = stdscr
     INPUT_PAD = curses.newpad(1, 800)
-    IMMIGRANT_SAY_PAD = curses.newpad(1, 800)
+    IMMIGRANT_SAY_PAD = curses.newpad(5, 800)
     PLAYER_OPTIONS_PAD = curses.newpad(5, 800)
     SCORE_PAD = curses.newpad(1, 800)
     VIEW_PAD = curses.newpad(40, 400)
