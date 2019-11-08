@@ -13,6 +13,11 @@ import imageio
 import datetime
 from nltk.corpus import wordnet
 
+
+import gpt2
+from gpt2.src.generate_seeded_sample import interact_model
+import tensorflow as tf
+
 # no surprises, please
 random.seed(0)
 
@@ -64,6 +69,21 @@ IMMIGRANT_INFO_NAME_PAD=None
 IMMIGRANT_INFO_AGE_PAD=None
 IMMIGRANT_INFO_OCCUPATION_PAD=None
 IMMIGRANT_INFO_COUNTRY_PAD=None
+
+
+def sanitize_gpt2_output(s):
+    """Sanitize and return the first sentence from GPT-2"""
+    snew = ""
+    b = False
+    for c in s:
+        b |= (ord(c) >= ord('a') and ord(c) <= ord('z'))
+        b |= (ord(c) >= ord('A') and ord(c) <= ord('Z'))
+        b |= (c == ' ')
+
+        if b: snew += c
+    # cut at end of first sentence
+    return snew.split(".")[0]
+
 
 class Score:
     def __init__(self):
@@ -256,24 +276,24 @@ class ImmigrantInfoDiscovered:
         self.age_newly_discovered = False
         self.name_newly_discovered = False
 
-    def get_response(self, r):
+    def get_response(self, r, model):
         for w in TextBlob(r).words:
+            r = ""
             if w in set(["job", "occupation", "word", "livelihood"]):
                 self.occupation_newly_discovered = False if self.occupation_discovered else True
                 self.occupation_discovered = True
-                return "I worked as a " + self.immigrant.occupation
-
-            if w in set(["name"]):
+                r +=  "I worked as a " + self.immigrant.occupation
+            elif w in set(["name"]):
                 self.name_newly_discovered = False if self.name_discovered else True
                 self.name_discovered = True
-                return "My name is " + self.immigrant.name
+                r += "My name is " + self.immigrant.name
 
-            if w in set(["age"]):
+            elif w in set(["age"]):
                 self.age_newly_discovered = False if self.age_discovered else True
                 self.age_discovered = True
-                return "My age is " + str(self.immigrant.age)
+                r += "My age is " + str(self.immigrant.age)
 
-        return "response"
+        return r + ".\n" + sanitize_gpt2_output(model(r))
 
     def reset_newly_discovered(self):
         self.occupation_newly_discovered = False
@@ -744,75 +764,78 @@ def main(stdscr):
 
     generator = ImmigrantGenerator()
     
-    for _ in range(N_TOTAL_INTERVIEWS):
-        immigrant = generator.new_immigrant()
-        immigrantInfo = ImmigrantInfoDiscovered(immigrant)
+    with tf.Session(graph=tf.Graph()) as sess:
+        MODEL = interact_model(sess)
 
-        # ask for new immigrant
-        IMMIGRANT_SAY_PAD.clear()
-        PLAYER_OPTIONS_PAD.clear()
-        draw_player_options_pad()
-        draw_immigrant_say_pad()
+        for _ in range(N_TOTAL_INTERVIEWS):
+            immigrant = generator.new_immigrant()
+            immigrantInfo = ImmigrantInfoDiscovered(immigrant)
 
-        print_officer("officer", "next, please!")
-        time.sleep(TIME_SHORT_PAUSE)
+            # ask for new immigrant
+            IMMIGRANT_SAY_PAD.clear()
+            PLAYER_OPTIONS_PAD.clear()
+            draw_player_options_pad()
+            draw_immigrant_say_pad()
 
-        # Have immigrant say hello
-        print_immigrant("Good morning, officer")
-
-        # draw_player_options_pad()
-        
-        # Allow for dialogue
-        # ==================
-
-        immigration_choice = None
-        for i in range(N_ROUNDS_PER_INTERVIEW):
-            TRANSCRIPTS.append("")
-            print_immigrant_info(immigrantInfo)
-            immigrantInfo.reset_newly_discovered()
-
-            transcript = ""
+            print_officer("officer", "next, please!")
             time.sleep(TIME_SHORT_PAUSE)
-            i = read_input()
 
-            # we got a string response (question). Get response to question
-            if i == IMMIGRATION_CHOICE_ENTER or i == IMMIGRATION_CHOICE_DEPORT or i == IMMIGRATION_CHOICE_DETAIN:
-                immigration_choice = i
-                break
-            else:
-                TRANSCRIPTS[-1] = TRANSCRIPTS[-1] +  i + "\n"
+            # Have immigrant say hello
+            print_immigrant("Good morning, officer")
 
-                # Print out output
-                r = immigrantInfo.get_response(i)
-                print_immigrant(r)
-                TRANSCRIPTS[-1] = TRANSCRIPTS[-1] +  r + "\n"
+            # draw_player_options_pad()
+            
+            # Allow for dialogue
+            # ==================
 
-        # Provide options if the dialogue is complete
-        # ===========================================
-        if immigration_choice == None:
+            immigration_choice = None
+            for i in range(N_ROUNDS_PER_INTERVIEW):
+                TRANSCRIPTS.append("")
+                print_immigrant_info(immigrantInfo)
+                immigrantInfo.reset_newly_discovered()
+
+                transcript = ""
+                time.sleep(TIME_SHORT_PAUSE)
+                i = read_input()
+
+                # we got a string response (question). Get response to question
+                if i == IMMIGRATION_CHOICE_ENTER or i == IMMIGRATION_CHOICE_DEPORT or i == IMMIGRATION_CHOICE_DETAIN:
+                    immigration_choice = i
+                    break
+                else:
+                    TRANSCRIPTS[-1] = TRANSCRIPTS[-1] +  i + "\n"
+
+                    # Print out output
+                    r = immigrantInfo.get_response(i, MODEL)
+                    print_immigrant(r)
+                    TRANSCRIPTS[-1] = TRANSCRIPTS[-1] +  r + "\n"
+
+            # Provide options if the dialogue is complete
+            # ===========================================
+            if immigration_choice == None:
+                time.sleep(TIME_SHORT_PAUSE)
+                immigration_choice = read_immigration_choice()
+
+            # Print what happens to them, update score
+            # =======================================
             time.sleep(TIME_SHORT_PAUSE)
-            immigration_choice = read_immigration_choice()
+            print_immigration_feedback(generator, immigrant, immigration_choice)
+            update_score(immigration_choice)
 
-        # Print what happens to them, update score
-        # =======================================
-        time.sleep(TIME_SHORT_PAUSE)
-        print_immigration_feedback(generator, immigrant, immigration_choice)
-        update_score(immigration_choice)
+        # TODO: test this code
 
-    # TODO: test this code
+        for i, transcript in enumerate(TRANSCRIPTS):
+            STDSCR.clear()
+            STDSCR.refresh()
 
-    for i, transcript in enumerate(TRANSCRIPTS):
-        STDSCR.clear()
-        STDSCR.refresh()
-
-        header = "Interview %s:\n" % (i+1, )
-        transcript =  header + ('-' * len(header)) + "\n" + transcript
-        TRANSCRIPT_PAD.clear()
-        print_pad_string(TRANSCRIPT_PAD, transcript, color=True)
-        TRANSCRIPT_PAD.refresh(0, 0, 0, 0, 50, 75)
-        time.sleep(1)
-        curses.flushinp()
-        c = STDSCR.getch()
+            header = "Interview %s:\n" % (i+1, )
+            transcript =  header + ('-' * len(header)) + "\n" + transcript
+            TRANSCRIPT_PAD.clear()
+            print_pad_string(TRANSCRIPT_PAD, transcript, color=True)
+            TRANSCRIPT_PAD.refresh(0, 0, 0, 0, 50, 75)
+            time.sleep(1)
+            curses.flushinp()
+            c = STDSCR.getch()
 
 if __name__ == "__main__":
     wrapper(main)
