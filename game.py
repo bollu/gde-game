@@ -252,6 +252,17 @@ class ImmigrantInfoDiscovered:
                 self.occupation_newly_discovered = False if self.occupation_discovered else True
                 self.occupation_discovered = True
                 return "I worked as a " + self.immigrant.occupation
+
+            if w in set(["name"]):
+                self.name_newly_discovered = False if self.name_discovered else True
+                self.name_discovered = True
+                return "My name is " + self.immigrant.name
+
+            if w in set(["age"]):
+                self.age_newly_discovered = False if self.age_discovered else True
+                self.age_discovered = True
+                return "My age is " + str(self.immigrant.age)
+
         return "response"
 
     def reset_newly_discovered(self):
@@ -512,6 +523,7 @@ def print_immigrant_info(immigrantInfo):
     IMMIGRANT_INFO_OCCUPATION_PAD.clear()
 
     def print_info_animated(pad, renderer, name, value, animated):
+        value = str(value)
         if animated:
             for i in range(len(value) + 1):
                 pad.clear()
