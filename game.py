@@ -418,6 +418,27 @@ def intercalate(lst, item):
     result[0::2] = lst
     return result
 
+def split_sentence(s):
+    s = str(s)
+    words = s.split(' ')
+    words = [intercalate(w.split('\n'), '\n') for w in words]
+    words = flatten(words)
+
+    s2 = ""
+    curlen = 0
+    for i, w in enumerate(words):
+        # add a newline
+        if curlen + len(w) + 1 > 60:
+            s2 += "\n"
+            curlen = 0
+        elif "\n" in w:
+            curlen = 0
+        else:
+            curlen += len(w)
+        s2 += w
+        if i < len(words)-1: s2 += ' '
+    return s2
+
 
 # print a string into a pad. NEVER use pad.addstr (For the most part...)
 def print_pad_string(pad, s, color=False):
@@ -594,6 +615,8 @@ def print_immigrant(r):
     global IMMIGRANT_SAY_PAD
     global STDSCR
 
+    r = split_sentence(r)
+
     if DEBUG_USE_OTHER_LANGUAGE_PRINTING:
         rencoded = TextBlob(r).translate(to='ar')
     else:
@@ -699,8 +722,22 @@ def read_immigration_choice():
     STDSCR.keypad(0)
     return choices[ix]
 
+def gen_from_gpt2(input_text, sess, context, enc, output):
+    context_tokens = enc.encode(input_text)
+    generated = 0
+    for _ in range(nsamples // batch_size):
+        out = sess.run(output, feed_dict={
+            context: [context_tokens for _ in range(batch_size)]
+        })[:, len(context_tokens):]
+        for i in range(batch_size):
+            generated += 1
+            text = enc.decode(out[i])
+            return sanitize_gpt2_output(text)
+            break
+        break
+    return ""
 
-def print_immigration_feedback(generator, immigrant, choice):
+def print_immigration_feedback(generator, immigrant, choice, sess, context, enc, output):
     global PLAYER_OPTIONS_PAD
     global STDSCR
     global SCORE
@@ -718,6 +755,7 @@ def print_immigration_feedback(generator, immigrant, choice):
         assert_in_game(choice == IMMIGRATION_CHOICE_DETAIN)
         s = "%s was detained." % (immigrant.name, )
 
+    s += "\n" + gen_from_gpt2(TRANSCRIPTS[-1] + "\n" + s, sess, context, enc, output)
     TRANSCRIPTS[-1] = TRANSCRIPTS[-1] +  s + "\n"
 
     IMMIGRANT_SAY_PAD.clear()
@@ -885,7 +923,7 @@ def main(stdscr):
             # Print what happens to them, update score
             # =======================================
             time.sleep(TIME_SHORT_PAUSE)
-            print_immigration_feedback(generator, immigrant, immigration_choice)
+            print_immigration_feedback(generator, immigrant, immigration_choice, sess, context, enc, output)
             update_score(immigration_choice)
 
     # TODO: test this code
