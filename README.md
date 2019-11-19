@@ -1,5 +1,8 @@
 # gpt2-converse
 
+![screenshot](./screenshot.png)
+
+
 Use GPT-2 To try and simulate a conversation between a person and an immigration officer.
 Topic chosen due to the fact that GPT-2 appears to be trained on a corpus of text that knows an
 unusual amount about wars, famine, death, american politics, and the middle east.
