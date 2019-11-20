@@ -47,5 +47,10 @@ We then append the entire transcript and ask GPT-2 to continue the conversation.
 
 Mixed. sometimes it's very coherent, other times it's not as much....
 
-# Installation instructions
-TODO: write script
+# Installation instructions and links
+- clone from: https://github.com/bollu/gde-game
+- setup GPT-2 by calling `git submodule update --init`
+- install GPT-2  as per the GPT-2 instructions
+- setup dependences with `pip install -r requirements.txt --user`
+- run `game.py`
+
