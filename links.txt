@@ -1,1 +1,3 @@
 https://github.com/bollu/gde-game
+
+Please read the `README.md` for a detailed analysis

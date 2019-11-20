@@ -31,6 +31,19 @@ Based on the feedback from the players about the realistic nature of responses,
 we believe a refined version of the game would be capable of passing the Turing
 test. 
 
+##### Results:
+
+The game managed to hold coherent conversations offering appropriate and interesting
+responses to queries. In a few instances the responses were irrelevant or repetitive.
+The players found the game to be realistic and certain responses very interesting.
+They found the challenge of identifying the correct action quite engaging and allowed
+for creative questioning that often had funny or unexpected responses. The lack of
+restrictions on the kind of questions prompted certain players to test the quality of
+responses to more complex questions. Further, many players asked socio-political
+questions like "What is your opinion of Trump?" and ethical questions about the game's
+views on murder, etc. The answers were sometimes ambiguous in nature giving the
+character a realistic feel. 
+
 # [Game design document](./Game-design-document.docx)
 
 # Introduction
@@ -46,18 +59,6 @@ We then append the entire transcript and ask GPT-2 to continue the conversation.
 <img src="team-photo.jpg" width="128">
 
 
-# Results:
-
-The game managed to hold coherent conversations offering appropriate and interesting
-responses to queries. In a few instances the responses were irrelevant or repetitive.
-The players found the game to be realistic and certain responses very interesting.
-They found the challenge of identifying the correct action quite engaging and allowed
-for creative questioning that often had funny or unexpected responses. The lack of
-restrictions on the kind of questions prompted certain players to test the quality of
-responses to more complex questions. Further, many players asked socio-political
-questions like "What is your opinion of Trump?" and ethical questions about the game's
-views on murder, etc. The answers were sometimes ambiguous in nature giving the
-character a realistic feel. 
 
 # Installation instructions and links
 - clone from: https://github.com/bollu/gde-game
