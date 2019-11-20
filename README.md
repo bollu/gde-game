@@ -59,5 +59,10 @@ questions like "What is your opinion of Trump?" and ethical questions about the 
 views on murder, etc. The answers were sometimes ambiguous in nature giving the
 character a realistic feel. 
 
-# Installation instructions
-TODO: write script
+# Installation instructions and links
+- clone from: https://github.com/bollu/gde-game
+- setup GPT-2 by calling `git submodule update --init`
+- install GPT-2  as per the GPT-2 instructions
+- setup dependences with `pip install -r requirements.txt --user`
+- run `game.py`
+
