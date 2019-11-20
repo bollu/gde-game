@@ -28,7 +28,7 @@ we were running the whole game over SSH. However, we can in the future move
 the model to google cloud and thereby get some more performance.
 
 
-# Game design document
+# [Game design document](./Game-design-document.docx)
 
 # Introduction
 
@@ -41,6 +41,8 @@ We then append the entire transcript and ask GPT-2 to continue the conversation.
 
 # Team photo
 ![team-photo](./team-photo.jpg)
+
+<img src="team-photo.jpg" width="128">
 
 
 # Results:
