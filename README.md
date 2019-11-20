@@ -40,8 +40,6 @@ We attempt to prime GPT-2 by setting up the "context" of the person who is being
 We then append the entire transcript and ask GPT-2 to continue the conversation.
 
 # Team photo
-![team-photo](./team-photo.jpg)
-
 <img src="team-photo.jpg" width="128">
 
 
